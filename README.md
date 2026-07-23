@@ -86,11 +86,12 @@ python scripts/server.py
 ## 六、目录结构
 
 ```
-股票基金筛选/
+ZOE-stock-screener/
 ├── schema.sql
 ├── scripts/  (db / scoring / alerts / portfolio / review / init_db / server).py
 ├── ui/index.html
 ├── data/        # 运行时生成（已忽略）
+├── LICENSE      # MIT 开源协议
 ├── README.md
 └── .gitignore
 ```
@@ -100,3 +101,22 @@ python scripts/server.py
 ## 七、免责声明
 
 本系统为研究/教学/效率工具，评分基于录入指标与模型推断，**不构成投资建议**；投资有风险，决策需谨慎。
+
+---
+
+## 八、环境要求
+
+- **Python 3.8+**（仅使用标准库，无需 `pip install`）
+- 支持 Windows / macOS / Linux
+- 无需额外数据库服务，SQLite 文件即开即用
+
+## 九、开源协议
+
+本项目基于 **MIT License** 开源，详见 [LICENSE](./LICENSE)。
+你可以自由使用、修改、分发、二次开发，包括用于商业用途，只需保留版权声明与许可声明。
+
+## 十、如何参与共建
+
+欢迎朋友 fork 共建。修改前请先 `git pull --rebase`，提交前在本地打一个 checkpoint 标签再推送；
+**切勿**对 `main` 强推、切勿提交 `*.db` / 客户 `*.xlsx` / 任何 API Key（密钥走 `system_config` 表或环境变量）。
+详见配套技能《股票基金筛选 GitHub 拉取 / 推送 / 版本回滚 / 加协作者》中的 5 条铁律。
