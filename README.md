@@ -120,3 +120,13 @@ ZOE-stock-screener/
 欢迎朋友 fork 共建。修改前请先 `git pull --rebase`，提交前在本地打一个 checkpoint 标签再推送；
 **切勿**对 `main` 强推、切勿提交 `*.db` / 客户 `*.xlsx` / 任何 API Key（密钥走 `system_config` 表或环境变量）。
 详见配套技能《股票基金筛选 GitHub 拉取 / 推送 / 版本回滚 / 加协作者》中的 5 条铁律。
+
+---
+
+## 十一、ZOE 同步技能验收记录
+
+- **2026-07-25**：经「ZOE 股票筛选系统」同步技能走真实验收流程，自动执行 `pull → checkpoint → commit → push` 闭环通过。
+  - 锚点标签：`cp-verify-20260725`（指向改动前基线 `8270f3f`）
+  - 提交前缀：`docs:`（更新本记录小节）
+  - 验收时仓库状态：本机 `main` 与 `origin/main` 同步于 `8270f3f`，工作区干净
+  - 三人协作仓库：`git@github.com:NOVASUN168/ZOE-stock-screener.git`（Nova / ROBIN / Sean）
