@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-stock-screener · 多因子评分引擎
-严格按用户给定的权重计算综合分(0-100)、等级、推荐指数、风险标记，
-并实现三类风格（绩优/长线/短线）筛选与启发式结论字段。
-所有"结论字段"均标注为推断（非事实），UI 层会显式区隔。
+stock-screener · V2.0 多因子评分引擎（AI产业聚焦版）
+核心逻辑：
+  - 护城河难以复制 → 转化为更大市占率与利润（成长因子核心）
+  - 聚焦 AI 产业四类（核心基础/模型平台/AI革命/AI医药）；非AI行业一票否决
+  - 资金面只看主力长期趋势（过滤散户/短期游资）
+  - 不做技术分析、不承诺收益率、不自动连接下单
+权重：基本面35 / 估值20 / 成长25(护城河核心) / 资金15(主力长期) / 风险5 = 100
+所有“结论字段”均标注为推断（非事实），UI 层会显式区隔。
 """
 from datetime import datetime
 
@@ -15,7 +19,7 @@ def _num(v):
         return None
 
 def _yn(v):
-    return str(v) in ("1", "true", "True", "是", "是", "True", "1.0")
+    return str(v) in ("1", "true", "True", "是", "True", "1.0")
 
 def _half(maxp, val, hit, partial=None, miss=0.0):
     """三态计分：命中=maxp，未知(None/空)=maxp*0.5，未命中=miss。"""
@@ -27,32 +31,33 @@ def _txt(v):
     return "" if v is None else str(v)
 
 
-# ---------- 六大因子 ----------
+# ---------- 基本面 35 ----------
 def _fundamental(r):
     s = 0.0
-    roe = _num(r.get("roe")); s += _half(6, roe, roe is not None and roe > 15)
-    if roe is not None and 10 < roe <= 15: s += 3
-    elif roe is not None and 0 < roe <= 10: s += 1
+    roe = _num(r.get("roe")); s += _half(8, roe, roe is not None and roe > 15)
+    if roe is not None and 10 < roe <= 15: s += 4
+    elif roe is not None and 0 < roe <= 10: s += 1.5
     roa = _num(r.get("roa")); s += _half(5, roa, roa is not None and roa > 8)
     if roa is not None and 5 < roa <= 8: s += 2.5
     elif roa is not None and 0 < roa <= 5: s += 1
     rg = _num(r.get("rev_growth_years"))
-    s += _half(5, rg, rg == 3) if rg != 2 and rg != 1 else (3 if rg == 2 else 1)
+    s += _half(5, rg, rg == 3) if rg not in (2, 1) else (3 if rg == 2 else 1)
     ng = _num(r.get("netprofit_growth_years"))
-    s += _half(5, ng, ng == 3) if ng != 2 and ng != 1 else (3 if ng == 2 else 1)
+    s += _half(5, ng, ng == 3) if ng not in (2, 1) else (3 if ng == 2 else 1)
     s += _half(4, r.get("fcf_positive"), _yn(r.get("fcf_positive")))
     dr = _num(r.get("debt_ratio")); st = _txt(r.get("sector_type"))
     if dr is None:
-        s += 2.5
+        s += 4
     else:
         if st == "科技":
-            s += 5 if dr < 50 else (2.5 if dr < 65 else 0)
+            s += 8 if dr < 50 else (4 if dr < 65 else 0)
         elif st == "金融":
-            s += 3
+            s += 4
         else:
-            s += 5 if dr < 60 else (2.5 if dr < 70 else 0)
-    return min(s, 30.0)
+            s += 8 if dr < 60 else (4 if dr < 70 else 0)
+    return min(s, 35.0)
 
+# ---------- 估值 20 ----------
 def _valuation(r):
     s = 0.0
     pe = _num(r.get("pe")); pe_avg = _num(r.get("pe_industry_avg"))
@@ -78,49 +83,37 @@ def _valuation(r):
     elif sm >= 15: s += 1.5
     return min(s, 20.0)
 
+# ---------- 成长 25（护城河核心逻辑） ----------
 def _growth(r):
     s = 0.0
     s += _half(4, r.get("rd_increase"), _yn(r.get("rd_increase")))
-    s += _half(4, r.get("mkt_share_growth"), _yn(r.get("mkt_share_growth")))
+    # 护城河 → 市占率转化
+    s += _half(5, r.get("mkt_share_growth"), _yn(r.get("mkt_share_growth")))
     isp = _txt(r.get("industry_space"))
     s += {"大": 4, "中": 2, "小": 0}.get(isp, 2)
+    # 护城河难以复制
     moat = _txt(r.get("moat"))
-    s += {"明显": 4, "强": 4, "中等": 2, "弱": 0, "无": 0}.get(moat, 2)
+    s += {"明显": 8, "强": 8, "中等": 4, "弱": 0, "无": 0}.get(moat, 4)
+    # 护城河 → 利润转化
     pf = _num(r.get("profit_forecast_3y"))
     if pf is None: s += 2
     elif pf >= 15: s += 4
     elif pf >= 8: s += 2
-    return min(s, 20.0)
+    elif pf > 0: s += 1
+    return min(s, 25.0)
 
-def _technical(r):
-    s = 0.0
-    ma = _txt(r.get("ma_trend"))
-    s += {"多头": 4, "多头排列": 4, "震荡": 2, "空头": 0}.get(ma, 2)
-    macd = _txt(r.get("macd"))
-    s += {"金叉": 3, "红柱": 3, "持平": 1.5, "死叉": 0, "绿柱": 0}.get(macd, 1.5)
-    kdj = _txt(r.get("kdj"))
-    s += {"金叉": 2, "持平": 1, "死叉": 0}.get(kdj, 1)
-    rsi = _num(r.get("rsi"))
-    if rsi is None: s += 1
-    elif 30 <= rsi <= 70: s += 2
-    elif rsi < 30: s += 1.5
-    else: s += 1
-    vol = _txt(r.get("volume"))
-    s += {"放量": 2, "温和放大": 2, "持平": 1, "萎缩": 0}.get(vol, 1)
-    vlt = _txt(r.get("volatility"))
-    s += {"低": 2, "中": 1, "高": 0}.get(vlt, 1)
-    return min(s, 15.0)
-
+# ---------- 资金 15（主力长期趋势） ----------
 def _capital(r):
     s = 0.0
-    mf = _txt(r.get("main_fund_flow"))
-    s += {"净流入": 4, "流入": 4, "持平": 2, "净流出": 0}.get(mf, 2)
+    mft = _txt(r.get("main_force_trend"))
+    s += {"流入": 8, "流出": 0, "持平": 4}.get(mft, 4)
     nb = _txt(r.get("northbound"))
-    s += {"增持": 3, "持平": 1.5, "减持": 0}.get(nb, 1.5)
+    s += {"增持": 4, "持平": 2, "减持": 0}.get(nb, 2)
     ic = _txt(r.get("institution_change"))
     s += {"增仓": 3, "持平": 1.5, "减仓": 0}.get(ic, 1.5)
-    return min(s, 10.0)
+    return min(s, 15.0)
 
+# ---------- 风险 5 ----------
 def _risk(r):
     s = 5.0
     if _yn(r.get("financial_risk")): s -= 1
@@ -144,16 +137,20 @@ HARD_FILTERS = [
     ("consecutive_loss", "连续亏损"),
     ("major_holder_reduction", "大股东减持"),
     ("high_pledge", "高质押"),
+    ("non_ai", "非AI驱动行业"),
 ]
 def _hard_excluded(r):
     hits = []
     for key, label in HARD_FILTERS:
-        if key == "litigation":
-            if _yn(r.get(key)): hits.append(label)
-        elif key == "high_pledge":
-            if _yn(r.get(key)): hits.append(label)
+        if key == "non_ai":
+            if str(r.get("ai_driven")) == "0":
+                hits.append(label)
+        elif key in ("litigation", "high_pledge"):
+            if _yn(r.get(key)):
+                hits.append(label)
         else:
-            if _yn(r.get(key)): hits.append(label)
+            if _yn(r.get(key)):
+                hits.append(label)
     gr = _num(r.get("goodwill_ratio"))
     if gr is not None and gr > 40:
         hits.append("商誉过高(>40%)")
@@ -181,61 +178,56 @@ def _rating(score):
     return "★★", "不建议"
 
 
-# ---------- 启发式结论（标注：推断） ----------
+# ---------- 启发式结论（标注：推断；V2.0 改为研究逻辑，不承诺收益） ----------
 def _heuristics(r, score):
-    price = _num(r.get("price"))
     peg = _num(r.get("peg"))
     pf = _num(r.get("profit_forecast_3y"))
-    sm = _num(r.get("safety_margin"))
     pe_avg = _num(r.get("pe_industry_avg"))
+    moat = _txt(r.get("moat"))
 
-    # 合理估值
+    # 估值看法（定性，非目标价）
     if peg is not None and pf is not None:
-        fair_pe = peg * pf
-        reasonable = f"合理PE≈{fair_pe:.1f}（PEG×三年利润增速，推断）"
+        val_view = f"合理PE≈{peg*pf:.1f}（PEG×三年利润增速，推断）"
     elif pe_avg is not None:
-        reasonable = f"参考行业PE均值 {pe_avg:.1f}（推断）"
+        val_view = f"参考行业PE均值 {pe_avg:.1f}（推断）"
     else:
-        reasonable = "待补充估值数据（推断）"
+        val_view = "待补充估值数据（推断）"
 
-    # 目标价格
-    tp = None
-    if price:
-        upside = None
-        if sm is not None: upside = min(sm, 50)
-        elif pf is not None: upside = min(pf, 40)
-        if upside is None: upside = 20
-        tp = price * (1 + upside / 100)
-    target = f"{tp:.2f}" if tp else "待定"
+    # 配置视图（定性，按评分，非收益承诺）
+    if score >= 80: alloc = "核心配置"
+    elif score >= 70: alloc = "卫星配置"
+    elif score >= 60: alloc = "观察"
+    else: alloc = "回避"
 
-    # 买点 / 止损 / 止盈
-    buy = f"{price*0.95:.2f} 附近企稳" if price else "待定"
-    stop = f"{price*0.90:.2f}（约-10%）" if price else "待定"
-    take = f"{tp:.2f}" if tp else "待定"
+    # 持有期（长期，无短线）
+    hold = "5年以上（长期持有）" if score >= 80 else "3年以上（长期持有）"
 
-    # 仓位
-    if score >= 90: pos = "15-20%"
-    elif score >= 80: pos = "10-15%"
-    elif score >= 70: pos = "5-10%"
-    else: pos = "暂不配置"
+    # 核心竞争力（护城河摘要）
+    comp = []
+    if moat in ("明显", "强"): comp.append(f"护城河{moat}")
+    if _yn(r.get("fcf_positive")): comp.append("自由现金流转正")
+    roe = _num(r.get("roe"))
+    if roe and roe > 15: comp.append(f"ROE {roe:.1f}%")
+    if _txt(r.get("main_force_trend")) == "流入": comp.append("主力资金长期流入")
+    core = "、".join(comp) if comp else "待补充护城河分析"
 
-    # 预计收益
-    er = f"{(tp/price-1)*100:.1f}%" if (tp and price) else "待定"
-
-    # 预计持有时间（默认，按分数；风格筛选会覆盖）
-    if score >= 90: hold = "1-3 年"
-    elif score >= 80: hold = "6-18 个月"
-    else: hold = "波段 / 观望"
+    # 长期研究逻辑
+    thesis = []
+    if _txt(r.get("industry_space")) == "大": thesis.append("行业空间大")
+    if _yn(r.get("mkt_share_growth")): thesis.append("市占率持续提升，护城河正转化为份额")
+    if pf is not None and pf >= 15: thesis.append(f"三年利润预期增速 {pf:.1f}%")
+    mft = _txt(r.get("main_force_trend"))
+    if mft == "流入": thesis.append("大资金长期趋势向好")
+    elif mft == "流出": thesis.append("大资金长期趋势偏弱，需观察")
+    else: thesis.append("大资金趋势持平，待确认")
+    if not thesis: thesis.append("待补充产业与资金信号")
 
     return {
-        "reasonable_valuation": reasonable,
-        "target_price": target,
-        "buy_point": buy,
-        "stop_loss": stop,
-        "take_profit": take,
-        "suggested_position": pos,
-        "expected_return": er,
+        "reasonable_valuation": val_view,
+        "suggested_position": alloc,
         "expected_hold": hold,
+        "core_competence": core,
+        "long_term_thesis": "；".join(thesis),
     }
 
 
@@ -249,16 +241,15 @@ def _reasons(r, score):
         reasons.append(f"估值合理：PEG {peg:.2f}（<1.5）提供安全边际")
     moat = _txt(r.get("moat"))
     if moat in ("明显", "强"):
-        reasons.append(f"护城河{moat}：具备长期竞争壁垒")
-    mf = _txt(r.get("main_fund_flow"))
-    if mf in ("净流入", "流入"):
-        reasons.append("资金面友好：主力资金净流入")
-    ma = _txt(r.get("ma_trend"))
-    if ma in ("多头", "多头排列"):
-        reasons.append("技术面多头排列，趋势向上")
+        reasons.append(f"护城河{moat}：具备长期难以复制的竞争壁垒")
+    if _yn(r.get("mkt_share_growth")):
+        reasons.append("市占率持续提升，护城河正转化为市场份额")
     pf = _num(r.get("profit_forecast_3y"))
     if pf is not None and pf >= 15:
         reasons.append(f"成长预期高：未来三年利润预测增速 {pf:.1f}%")
+    mft = _txt(r.get("main_force_trend"))
+    if mft == "流入":
+        reasons.append("主力资金长期趋势流入，大资金意图偏多")
     if not reasons:
         reasons.append("综合因子得分中等，暂无单项突出优势，建议补充数据后重评")
     return reasons[:4]
@@ -273,7 +264,7 @@ def _advantages(r):
     if _yn(r.get("fcf_positive")): adv.append("自由现金流转正")
     moat = _txt(r.get("moat"))
     if moat in ("明显", "强"): adv.append("护城河明显")
-    if _txt(r.get("ma_trend")) in ("多头", "多头排列"): adv.append("均线多头")
+    if _txt(r.get("main_force_trend")) == "流入": adv.append("主力长期流入")
     return "、".join(adv) if adv else "—"
 
 
@@ -281,8 +272,8 @@ def _advantages(r):
 def score_stock(row: dict) -> dict:
     row = dict(row)
     f = _fundamental(row); v = _valuation(row); g = _growth(row)
-    t = _technical(row); c = _capital(row); rk = _risk(row)
-    total = round(f + v + g + t + c + rk, 1)
+    c = _capital(row); rk = _risk(row)
+    total = round(f + v + g + c + rk, 1)
 
     hard = _hard_excluded(row)
     soft = _soft_risks(row)
@@ -309,61 +300,51 @@ def rescore_all(rows: list) -> list:
     return [score_stock(r) for r in rows]
 
 
-# ---------- 三类风格筛选 ----------
+# ---------- 风格筛选（V2.0：仅保留 绩优 / 长线；移除短线，因不做技术分析） ----------
 def screen_by_style(rows: list, style: str) -> list:
     scored = rescore_all(rows)
     def _key(r): return r.get("id") or r.get("code") or id(r)
     excluded = {_key(r) for r in scored if "排除" in r["rating"]}
     out = [r for r in scored if _key(r) not in excluded]
 
-    if style == "绩优" or style == "quality":
-        # 偏好高基本面+估值+成长，行业偏好 AI/半导体/机器人/新能源/医药/消费/高端制造/云计算/软件
-        pref = ["AI", "人工智能", "半导体", "芯片", "机器人", "新能源", "医药", "消费", "高端制造", "云计算", "软件"]
+    if style in ("绩优", "quality"):
+        # 偏好 AI 产业 + 主力长期流入
+        pref = ["核心基础", "模型平台", "AI革命", "AI医药", "AI", "人工智能",
+                "半导体", "芯片", "机器人", "医药", "软件", "云计算"]
         def q_key(r):
             base = r["total_score"]
-            ind = _txt(r.get("industry"))
-            if any(p in ind for p in pref): base += 3
+            if _txt(r.get("ai_category")) in pref: base += 3
+            if _txt(r.get("main_force_trend")) == "流入": base += 2
             return base
         out = sorted(out, key=q_key, reverse=True)
 
-    elif style == "长线" or style == "long":
-        # 要求护城河+ROE+自由现金流转正；持有5年以上
+    elif style in ("长线", "long"):
+        # 要求护城河 + 自由现金流转正 + 主力长期流入；持有5年以上
         def l_key(r):
             base = r["total_score"]
             if _txt(r.get("moat")) in ("明显", "强"): base += 5
             if _yn(r.get("fcf_positive")): base += 3
+            if _txt(r.get("main_force_trend")) == "流入": base += 2
             return base
         out = [r for r in out if _txt(r.get("moat")) in ("明显", "强", "")]
         out = sorted(out, key=l_key, reverse=True)
         for r in out:
             r["expected_hold"] = "5年以上（长线持有）"
 
-    elif style == "短线" or style == "short":
-        # 要求技术多头+资金流入；持股 1-20 交易日
-        def s_key(r):
-            base = 0.0
-            if _txt(r.get("ma_trend")) in ("多头", "多头排列"): base += 6
-            if _txt(r.get("macd")) in ("金叉", "红柱"): base += 4
-            if _txt(r.get("volume")) in ("放量", "温和放大"): base += 3
-            if _txt(r.get("main_fund_flow")) in ("净流入", "流入"): base += 4
-            if _txt(r.get("kdj")) == "金叉": base += 3
-            return base
-        out = [r for r in out if (s_key(r) >= 10)]
-        out = sorted(out, key=s_key, reverse=True)
-        for r in out:
-            r["expected_hold"] = "1-20 交易日（短线）"
-            r["suggested_position"] = "10-15%（短线，严控仓位）"
-
+    # 短线模式已移除（V2.0：不做技术分析、不以短期涨跌为目标）
     return out
 
 
 if __name__ == "__main__":
-    demo = {"code": "sh600519", "name": "贵州茅台", "industry": "消费/白酒", "price": 1500,
-            "roe": 30, "roa": 22, "rev_growth_years": 3, "netprofit_growth_years": 3,
-            "fcf_positive": 1, "debt_ratio": 20, "sector_type": "制造业",
-            "pe": 25, "pe_industry_avg": 30, "pb": 8, "peg": 1.2, "ev_ebitda": 18, "safety_margin": 25,
-            "rd_increase": 1, "mkt_share_growth": 1, "industry_space": "大", "moat": "明显", "profit_forecast_3y": 15,
+    demo = {"code": "sz002230", "name": "科大讯飞", "industry": "计算机/AI", "price": 39.73,
+            "roe": 8, "roa": 5, "rev_growth_years": 3, "netprofit_growth_years": 3,
+            "fcf_positive": 1, "debt_ratio": 40, "sector_type": "科技",
+            "pe": 110, "pe_industry_avg": 60, "pb": 4.2, "peg": 3.5, "ev_ebitda": 25, "safety_margin": 10,
+            "rd_increase": 1, "mkt_share_growth": 1, "industry_space": "大", "moat": "强", "profit_forecast_3y": 30,
             "ma_trend": "多头", "macd": "金叉", "kdj": "金叉", "rsi": 55, "volume": "温和放大", "volatility": "低",
-            "main_fund_flow": "净流入", "northbound": "增持", "institution_change": "增仓",
-            "financial_risk": 0, "litigation": 0, "pledge_ratio": 0, "regulatory_penalty": 0, "goodwill_ratio": 2}
+            "main_fund_flow": "净流入", "northbound": "持平", "institution_change": "增仓", "main_force_trend": "流出",
+            "market": "A股", "board": "主板", "ai_category": "模型平台", "ai_driven": 1, "research_signals": "产品进展;技术突破",
+            "financial_risk": 0, "litigation": 0, "pledge_ratio": 0, "regulatory_penalty": 0, "goodwill_ratio": 2,
+            "st_flag": 0, "delisting_risk": 0, "fraud_flag": 0, "consecutive_loss": 0,
+            "major_holder_reduction": 0, "high_pledge": 0}
     print(score_stock(demo))

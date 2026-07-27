@@ -25,15 +25,15 @@ import scoring
 SCHEMA = os.path.join(ROOT, "schema.sql")
 DEFAULT_DB = os.path.join(ROOT, "data", "screener.db")
 
-# ---------- 真实种子（由 scripts/fetch_real_data.py 抓取 westock-data 生成） ----------
-_SEED_JSON = os.path.join(ROOT, "scripts", "seed_real.json")
+# ---------- 真实种子（由 scripts/fetch_ai_data.py 抓取 westock-data 生成，V2.0 AI 股票池） ----------
+_SEED_JSON = os.path.join(ROOT, "scripts", "seed_real_v2.json")
 if os.path.exists(_SEED_JSON):
     with open(_SEED_JSON, encoding="utf-8") as _f:
         SEED = json.load(_f)
-    print(f"  已加载真实种子 {len(SEED)} 只（来自 seed_real.json，抓取日 2026-07-25）")
+    print(f"  已加载 V2.0 真实 AI 种子 {len(SEED)} 只（来自 seed_real_v2.json，抓取日 2026-07-27）")
 else:
     SEED = []
-    print("  ⚠️ 未找到 seed_real.json，请用 scripts/fetch_real_data.py 生成")
+    print("  ⚠️ 未找到 seed_real_v2.json，请用 scripts/fetch_ai_data.py 生成")
 
 
 def build_schema(conn):

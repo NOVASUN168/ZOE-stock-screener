@@ -29,11 +29,11 @@ def _rescore_and_persist(conn, row_id=None, data=None):
         raw = db.get(conn, row_id)
         scored = scoring.score_stock(raw)
     # 仅回写计算产物字段
-    computed = {k: scored.get(k) for k in [
-        "total_score", "rating", "recommend_index", "risk_flags",
-        "target_price", "reasonable_valuation", "buy_point", "stop_loss",
-        "take_profit", "suggested_position", "expected_return", "expected_hold",
-        "advantages", "risks_text", "recommend_reasons"]}
+        computed = {k: scored.get(k) for k in [
+            "total_score", "rating", "recommend_index", "risk_flags",
+            "reasonable_valuation", "suggested_position", "expected_hold",
+            "advantages", "risks_text", "recommend_reasons",
+            "core_competence", "long_term_thesis"]}
     if row_id is not None:
         db.patch_computed(conn, row_id, computed)
     return scored

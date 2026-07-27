@@ -100,7 +100,7 @@
 <header>
   <div>
     <h1>📊 股票基金筛选工作台</h1>
-    <div class="sub">stock-screener · 基本面30% · 估值20% · 成长20% · 技术15% · 资金10% · 风险5%</div>
+    <div class="sub">stock-screener V2.0 · AI产业聚焦：基本面35% · 估值20% · 成长25%(护城河) · 资金15%(主力长期) · 风险5% · 不做技术分析/不承诺收益</div>
   </div>
   <div class="spacer"></div>
   <button class="btn-ghost" id="btnExport">⬇ 导出 JSON</button>
@@ -124,7 +124,23 @@
         <option value="">全部</option>
         <option value="绩优">绩优股</option>
         <option value="长线">长线股</option>
-        <option value="短线">短线股</option>
+      </select>
+    </label>
+    <label>AI分类
+      <select id="fAi">
+        <option value="">全部</option>
+        <option value="核心基础">核心基础</option>
+        <option value="模型平台">模型平台</option>
+        <option value="AI革命">AI革命</option>
+        <option value="AI医药">AI医药</option>
+      </select>
+    </label>
+    <label>市场
+      <select id="fMarket">
+        <option value="">全部</option>
+        <option value="A股">A股</option>
+        <option value="港股">港股</option>
+        <option value="A+H">A+H</option>
       </select>
     </label>
     <label>行业 <input id="fIndustry" placeholder="如：半导体 / 消费"></label>
@@ -136,7 +152,7 @@
   <div class="wrap">
     <table id="tbl">
       <thead><tr>
-        <th>代码</th><th>名称</th><th>行业</th><th>现价</th>
+        <th>代码</th><th>名称</th><th>行业</th><th>市场</th><th>AI分类</th><th>现价</th>
         <th>综合评分</th><th>评级</th><th>风险标记</th><th>操作</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
@@ -176,7 +192,7 @@
 <!-- ============ 组合推荐 ============ -->
 <section id="panel-port">
   <div class="wrap">
-    <div class="note">💼 基于当前评分快照生成三类组合。资金分配、行业占比、风险等级、收益预期、最大回撤<b>均为模型推断</b>，非收益承诺。</div>
+    <div class="note">💼 V2.0 基于当前评分快照生成三类组合（聚焦 AI 产业与护城河）。配置视图、风险等级、最大回撤<b>均为模型推断</b>，非收益承诺；不做技术分析、不自动下单。</div>
     <div class="toolbar" style="border-radius:12px 12px 0 0">
       <button class="btn-line" data-ptype="robust">🛡 稳健型</button>
       <button class="btn-line" data-ptype="growth">🚀 成长型</button>
@@ -190,7 +206,7 @@
 <!-- ============ 每日复盘 ============ -->
 <section id="panel-review">
   <div class="wrap">
-    <div class="note">📅 买点/卖点/观察/风险/热点/轮动/明日重点，均为<b>基于快照的推断</b>，非实时行情决策。</div>
+    <div class="note">📅 V2.0 买点/回避信号基于<b>主力长期趋势+护城河+评分</b>推断（不做技术分析），热点/轮动/明日重点均为<b>基于快照的推断</b>，非实时行情决策。</div>
     <button class="btn-line btn-sm" id="btnRefreshReview">🔄 刷新复盘</button>
     <div id="reviewBody" style="margin-top:12px"></div>
   </div>
@@ -212,7 +228,7 @@
         <dt>自由现金流</dt><dd>公司真金白银剩下来的钱。为正才健康，能分红/扩张。</dd>
         <dt>资产负债率</dt><dd>借钱占总资产比例。制造<60%、科技<50% 较安全；金融另算。</dd>
         <dt>护城河</dt><dd>竞争对手难以复制的优势（品牌/牌照/网络效应）。明显 > 强 > 中等 > 弱。</dd>
-        <dt>MACD / KDJ 金叉</dt><dd>短线趋势转强信号；死叉为转弱。仅供参考，非买卖指令。</dd>
+        <dt>MACD / KDJ（V2.0 不参与评分）</dt><dd>技术指标。V2.0 明确“不做技术分析”，这些字段仅作展示，不计入综合评分；买卖决策请以护城河与主力长期趋势为准。</dd>
         <dt>北向资金 / 主力资金</dt><dd>外资与机构大单流向。净流入通常偏多，净流出偏空。</dd>
         <dt>商誉占比</dt><dd>并购溢价占净资产比。>40% 减值风险高，是一大雷区。</dd>
         <dt>质押比例</dt><dd>大股东把股票押给券商借钱的比例。>30% 需警惕，>50% 高风险。</dd>
@@ -279,18 +295,17 @@ const GROUPS = [
     {k:"moat",l:"护城河",t:"sel",opts:["明显","强","中等","弱","无"]},
     {k:"profit_forecast_3y",l:"未来三年利润增速(%)",t:"number"},
   ]},
-  {g:"技术(15%)", items:[
-    {k:"ma_trend",l:"均线趋势",t:"sel",opts:["多头","多头排列","震荡","空头"]},
-    {k:"macd",l:"MACD",t:"sel",opts:["金叉","红柱","持平","死叉","绿柱"]},
-    {k:"kdj",l:"KDJ",t:"sel",opts:["金叉","持平","死叉"]},
-    {k:"rsi",l:"RSI",t:"number",ph:"30-70"},
-    {k:"volume",l:"成交量",t:"sel",opts:["放量","温和放大","持平","萎缩"]},
-    {k:"volatility",l:"波动率",t:"sel",opts:["低","中","高"]},
+  {g:"范围与AI分类(V2.0)", items:[
+    {k:"market",l:"市场",t:"sel",opts:["A股","港股","A+H"]},
+    {k:"board",l:"板块",t:"sel",opts:["主板","创业板","科创板","北交所","H股","红筹","民营港股"]},
+    {k:"ai_category",l:"AI分类",t:"sel",opts:["核心基础","模型平台","AI革命","AI医药"]},
+    {k:"ai_driven",l:"是否AI驱动",t:"sel",opts:["1","0"]},
+    {k:"research_signals",l:"信息来源信号",t:"text",ph:"公告;产品进展;技术突破;客户采用;产业变化;监管动态"},
   ]},
-  {g:"资金(10%)", items:[
-    {k:"main_fund_flow",l:"主力资金",t:"sel",opts:["净流入","流入","持平","净流出"]},
+  {g:"资金(15%·主力长期)", items:[
+    {k:"main_force_trend",l:"主力长期趋势",t:"sel",opts:["流入","持平","流出"]},
     {k:"northbound",l:"北向资金",t:"sel",opts:["增持","持平","减持"]},
-    {k:"institution_change",l:"机构持仓",t:"sel",opts:["增仓","持平","减仓"]},
+    {k:"institution_change",l:"机构持仓(10日)",t:"sel",opts:["增仓","持平","减仓"]},
   ]},
   {g:"软风险(5%)", items:[
     {k:"financial_risk",l:"财务风险",t:"chk"},
@@ -311,9 +326,9 @@ const GROUPS = [
 
 const COMPUTED = [
   ["total_score","综合评分"],["rating","评级"],["recommend_index","推荐指数"],
-  ["risk_flags","风险标记"],["target_price","目标价格"],["reasonable_valuation","合理估值(推断)"],
-  ["buy_point","建议买点"],["stop_loss","止损"],["take_profit","止盈"],
-  ["suggested_position","建议仓位"],["expected_return","预计收益"],["expected_hold","预计持有时间"],
+  ["risk_flags","风险标记"],["reasonable_valuation","估值看法(推断)"],
+  ["suggested_position","配置视图"],["expected_hold","预计持有(长期)"],
+  ["core_competence","核心竞争力(护城河)"],["long_term_thesis","长期研究逻辑"],
   ["advantages","优势"],["risks_text","风险提示"],["recommend_reasons","推荐理由(4条)"],
 ];
 
@@ -381,9 +396,13 @@ function collectForm(){
 // ---------- 列表 ----------
 async function load(){
   const style=document.getElementById("fStyle").value;
+  const ai=document.getElementById("fAi").value;
+  const mkt=document.getElementById("fMarket").value;
   const ind=document.getElementById("fIndustry").value.trim();
   const min=document.getElementById("fMin").value.trim();
   let url="/api/stocks?"+[style?`style=${encodeURIComponent(style)}`:"",
+    ai?`ai_category=${encodeURIComponent(ai)}`:"",
+    mkt?`market=${encodeURIComponent(mkt)}`:"",
     ind?`industry=${encodeURIComponent(ind)}`:"",
     min?`min_score=${encodeURIComponent(min)}`:""].filter(Boolean).join("&");
   const res=await fetch(url);const rows=await res.json();
@@ -401,6 +420,8 @@ function render(rows){
       <td><code>${r.code||"-"}</code></td>
       <td>${r.name||"-"}</td>
       <td>${r.industry||"-"}</td>
+      <td>${r.market||"-"}</td>
+      <td><span class="pill">${r.ai_category||"-"}</span></td>
       <td>${r.price??"-"}</td>
       <td><span class="badge ${badgeClass(r.rating||"")}">${(r.total_score??0).toFixed(1)}</span></td>
       <td>${(r.rating||"-")} <span class="stars">${r.recommend_index||""}</span></td>
@@ -503,15 +524,15 @@ async function loadPortfolio(ptype){
   LAST_PORT={ptype, name:g.name, picks:g.picks};
   let h=`<div class="kv">
     <div><b>${g.risk_level}</b><span>风险等级</span></div>
-    <div><b>${g.exp_return}</b><span>预期收益(推断)</span></div>
+    <div><b>${g.alloc_view||"-"}</b><span>配置视图</span></div>
     <div><b>${g.max_drawdown}</b><span>最大回撤(推断)</span></div>
     <div><b>${g.avg_score}</b><span>组合均分</span></div>
     <div><b>${g.count}</b><span>持仓数</span></div>
   </div>`;
-  h+=`<table style="margin-top:12px"><thead><tr><th>名称</th><th>行业</th><th>评分</th><th>配置</th><th>预计收益</th><th>持有</th><th>风险标记</th></tr></thead><tbody>`;
+  h+=`<table style="margin-top:12px"><thead><tr><th>名称</th><th>行业</th><th>评分</th><th>配置</th><th>配置视图</th><th>持有(长期)</th><th>风险标记</th></tr></thead><tbody>`;
   g.picks.forEach(p=>{
     const rf=p.risk_flags&&p.risk_flags!=="无"?`<span class="risk">${p.risk_flags}</span>`:`<span class="risk ok">无</span>`;
-    h+=`<tr><td>${p.name}</td><td>${p.industry||"-"}</td><td>${p.score}</td><td><b>${p.alloc_pct}%</b></td><td>${p.expected_return||"-"}</td><td>${p.expected_hold||"-"}</td><td>${rf}</td></tr>`;
+    h+=`<tr><td>${p.name}</td><td>${p.industry||"-"}</td><td>${p.score}</td><td><b>${p.alloc_pct}%</b></td><td>${p.suggested_position||"-"}</td><td>${p.expected_hold||"-"}</td><td>${rf}</td></tr>`;
   });
   h+=`</tbody></table>`;
   h+=`<div class="mini" style="margin-top:10px">行业占比：`+Object.entries(g.industry_pct).map(([k,v])=>`${k} ${v}%`).join(" · ")+`</div>`;

@@ -20,18 +20,17 @@ def daily_review(conn):
 
     buy, sell = [], []
     for r in elig:
-        ma = r.get("ma_trend"); macd = r.get("macd"); mf = r.get("main_fund_flow")
-        score = r.get("total_score") or 0
+        mft = r.get("main_force_trend"); moat = r.get("moat"); score = r.get("total_score") or 0
         reasons = []
-        if ma in ("多头", "多头排列") and macd in ("金叉", "红柱") and mf in ("净流入", "流入") and score >= 80:
-            if ma in ("多头", "多头排列"): reasons.append("均线多头")
-            if macd in ("金叉", "红柱"): reasons.append(macd)
-            if mf in ("净流入", "流入"): reasons.append("资金流入")
+        # 买点观察（V2.0）：主力长期趋势流入 + 护城河强 + 评分高（不做技术分析）
+        if mft == "流入" and moat in ("明显", "强") and score >= 80:
+            reasons.append("主力长期趋势流入")
+            reasons.append(f"护城河{moat}")
+            reasons.append(f"评分{score:.0f}")
             buy.append({"stock": r, "reasons": reasons})
-        if (ma in ("空头",) or macd == "死叉") and mf == "净流出":
-            reasons.append("趋势走坏" if ma == "空头" else macd)
-            if mf == "净流出": reasons.append("主力出逃")
-            sell.append({"stock": r, "reasons": reasons})
+        # 回避/卖出（V2.0）：主力长期流出 或 评分偏低
+        elif mft == "流出":
+            sell.append({"stock": r, "reasons": ["主力长期趋势流出", f"评分{score:.0f}"]})
         elif score < 70:
             sell.append({"stock": r, "reasons": [f"评分偏低({score:.0f})"]})
 
@@ -52,7 +51,7 @@ def daily_review(conn):
     alerts = [a for a in list_alerts(conn, active_only=True) if not a.get("triggered")]
     focus = []
     for b in buy[:5]:
-        focus.append(f"{b['stock']['name']}（买点观察：{b['stock'].get('buy_point')}）")
+        focus.append(f"{b['stock']['name']}（长期观察：{b['stock'].get('core_competence') or '护城河待补充'}）")
     for a in alerts[:3]:
         s = conn.execute("SELECT name FROM stocks WHERE id=?", [a["stock_id"]]).fetchone()
         if s:

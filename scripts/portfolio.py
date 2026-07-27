@@ -60,39 +60,38 @@ def generate(conn, ptype="robust", top_n=8):
 
     picks_out = []
     ind_pct = {}
-    rets = []
+    alloc_views = {}
     vols = []
     for i, r in enumerate(picks):
         ind = _industry_cat(r.get("industry"))
         ind_pct[ind] = ind_pct.get(ind, 0) + alloc[i]
-        er = _parse_pct(r.get("expected_return"))
-        if er is not None:
-            rets.append(er)
+        av = r.get("suggested_position") or "观察"
+        alloc_views[av] = alloc_views.get(av, 0) + 1
         v = {"低": 0.06, "中": 0.12, "高": 0.22}.get(r.get("volatility"), 0.12)
         vols.append(v)
         picks_out.append({
             "id": r.get("id"), "code": r.get("code"), "name": r.get("name"),
             "industry": r.get("industry"), "score": r.get("total_score"),
-            "alloc_pct": alloc[i], "expected_return": r.get("expected_return"),
+            "alloc_pct": alloc[i], "suggested_position": r.get("suggested_position"),
             "expected_hold": r.get("expected_hold"), "risk_flags": r.get("risk_flags"),
         })
 
-    # 组合层指标（推断）
-    avg_ret = sum(rets) / len(rets) if rets else 0
+    # 组合层指标（推断；V2.0 不承诺收益率，改用配置视图与风险等级）
     avg_vol = sum(vols) / len(vols) if vols else 0.12
     max_dd = round(avg_vol * 2.2 * 100, 1)  # 经验：最大回撤 ≈ 年化波动*2.2
     avg_score = sum((r.get("total_score") or 0) for r in picks) / n if n else 0
     risk_level = "低" if avg_score >= 88 and avg_vol <= 0.08 else ("中" if avg_score >= 80 else "高")
+    alloc_view = "、".join(f"{k}×{v}" for k, v in sorted(alloc_views.items(), key=lambda x: -x[1]))
 
     return {
         "ptype": ptype, "name": name, "count": n,
         "picks": picks_out,
         "industry_pct": {k: round(v, 1) for k, v in sorted(ind_pct.items(), key=lambda x: -x[1])},
         "risk_level": risk_level,
-        "exp_return": f"{avg_ret:.1f}%",
+        "alloc_view": alloc_view,
         "max_drawdown": f"{max_dd:.1f}%",
         "avg_score": round(avg_score, 1),
-        "note": "组合指标为模型推断，非收益承诺；实战需结合实时行情与人工判断。",
+        "note": "组合指标为模型推断，非收益承诺；V2.0 聚焦 AI 产业与护城河，不做技术分析、不自动下单。实战需结合实时行情与人工判断。",
     }
 
 
@@ -112,7 +111,7 @@ if __name__ == "__main__":
     c = sqlite3.connect("data/screener.db"); c.row_factory = sqlite3.Row
     for t in ("robust", "growth", "aggressive"):
         g = generate(c, t)
-        print(f"\n【{g['name']}】风险={g['risk_level']} 预期收益={g['exp_return']} 最大回撤={g['max_drawdown']}")
+        print(f"\n【{g['name']}】风险={g['risk_level']} 配置视图={g['alloc_view']} 最大回撤={g['max_drawdown']}")
         for p in g["picks"][:5]:
             print(f"  {p['name']} {p['alloc_pct']}% 分={p['score']}")
     c.close()

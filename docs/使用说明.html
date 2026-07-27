@@ -66,9 +66,10 @@
     <h2>① 这是啥？一句话说清</h2>
     <div class="card">
       <p>这是一个<strong>本地运行的股票筛选小工具</strong>。它把一堆股票按
-      <strong>6 个维度打分（0–100 分）</strong>，帮你快速看出哪只更"优生优育"、哪只要小心。</p>
+      <strong>5 个维度打分（0–100 分）</strong>，帮你快速看出哪只更"优生优育"、哪只要小心。</p>
       <p>它<strong>不是荐股软件，也不替你下单</strong>。它只把你填（或系统抓）的数据，按固定规则算出一个分数和提醒，<strong>决策还是你自己做</strong>。</p>
-      <p>当前里面已经有 <strong>15 只真实 A 股</strong>（茅台、宁德、比亚迪……），数据来自公开行情接口（详见 ⑥）。</p>
+      <p>当前里面已经有 <strong>15 只真实 AI 股票</strong>（中芯国际、寒武纪、科大讯飞、腾讯控股……），
+      覆盖 A股 / 港股 / A+H 两地上市，<strong>只保留 AI 驱动行业</strong>（白酒等非 AI 行业会自动排除，详见 ⑤）。数据来自公开行情接口（详见 ⑥）。</p>
     </div>
     <svg viewBox="0 0 640 170" xmlns="http://www.w3.org/2008/svg" font-family="sans-serif">
       <rect x="20" y="55" width="120" height="60" rx="12" fill="#2563eb"/>
@@ -80,7 +81,7 @@
       <path d="M350 85 H420" stroke="#94a3b8" stroke-width="3" marker-end="url(#ar)"/>
       <rect x="420" y="55" width="120" height="60" rx="12" fill="#7c3aed"/>
       <text x="480" y="82" fill="#fff" font-size="14" text-anchor="middle">数据库</text>
-      <text x="480" y="102" fill="#fff" font-size="12" text-anchor="middle">15 只股票</text>
+      <text x="480" y="102" fill="#fff" font-size="12" text-anchor="middle">15只AI股</text>
       <path d="M480 115 V140 H280 V115" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#ar)"/>
       <text x="330" y="135" fill="#5b6b7b" font-size="12" text-anchor="middle">评分结果回显示在网页</text>
       <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
@@ -132,7 +133,7 @@ python scripts/server.py</pre>
       <text x="40" y="198" fill="#0ea5a4">• 推荐等级</text><text x="160" y="198" fill="#222">强烈推荐 / 推荐 / 关注 / 一般 / 不建议</text>
       <text x="40" y="222" fill="#d97706">• 风险标记</text><text x="160" y="222" fill="#222">有⚠️就代表要留意</text>
     </svg>
-    <div class="tip">💡 最常用的是<strong>「工作台」</strong>：看列表、加股票、点某只股票看详细评分理由，都在这里。</div>
+    <div class="tip">💡 最常用的是<strong>「工作台」</strong>：看列表、加股票、点某只股票看详细评分理由，都在这里。V2.0 新增<strong>「AI分类 / 市场」</strong>筛选器，可只看某类 AI 股或某市场（A股/港股/A+H）。</div>
   </section>
 
   <!-- ④ -->
@@ -144,7 +145,8 @@ python scripts/server.py</pre>
       <ul>
         <li><strong>代码 / 名称 / 行业</strong>：如 <code>sh600519</code>、贵州茅台、消费/白酒</li>
         <li><strong>价格 / PE / PB / ROE / 负债率</strong>：从行情软件或本系统抓的数据里抄</li>
-        <li><strong>技术面 / 资金面</strong>：多头/空头、净流入/净流出 等，按你判断选</li>
+        <li><strong>技术面（仅展示，不参与评分）/ 资金面</strong>：多头/空头、主力长期趋势(流入/流出/持平) 等，按你判断选</li>
+        <li><strong>AI分类 / 市场 / 是否AI驱动</strong>：选 核心基础/模型平台/AI革命/AI医药、A股/港股/A+H；非 AI 行业请选"否"，系统会自动排除</li>
       </ul>
       <p>填完点<strong>保存</strong>，系统会自动算分，新股票就出现在列表里。</p>
       <h3>✏️ 修改 / 🗑️ 删除</h3>
@@ -158,7 +160,7 @@ python scripts/server.py</pre>
   <!-- ⑤ -->
   <section id="score">
     <h2>⑤ 评分咋算的？（通俗版）</h2>
-    <p>系统把一只股票按 <strong>6 个维度</strong> 打分，加起来就是总分（满分 100）：</p>
+    <p>系统把一只股票按 <strong>5 个维度</strong> 打分，加起来就是总分（满分 100）：</p>
     <svg viewBox="0 0 640 300" xmlns="http://www.w3.org/2008/svg" font-family="sans-serif" font-size="13">
       <!-- hexagon -->
       <polygon points="320,40 470,120 410,270 230,270 170,120" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/>
@@ -168,32 +170,32 @@ python scripts/server.py</pre>
         <circle cx="320" cy="55" r="3"/><circle cx="458" cy="125" r="3"/>
         <circle cx="400" cy="258" r="3"/><circle cx="240" cy="258" r="3"/><circle cx="182" cy="125" r="3"/>
       </g>
-      <text x="320" y="78" text-anchor="middle" fill="#222">基本面 30</text>
+      <text x="320" y="78" text-anchor="middle" fill="#222">基本面 35</text>
       <text x="500" y="120" fill="#222">估值 20</text>
-      <text x="430" y="285" fill="#222">成长 20</text>
-      <text x="210" y="285" fill="#222">技术 15</text>
-      <text x="120" y="120" fill="#222">资金 10</text>
+      <text x="430" y="285" fill="#222">成长 25</text>
+      <text x="210" y="285" fill="#222">资金 15</text>
+      <text x="120" y="120" fill="#222">风险 5</text>
       <text x="320" y="18" fill="#222"></text>
       <!-- side legend -->
-      <text x="40" y="40" fill="#5b6b7b">六个维度：</text>
-      <text x="40" y="66" fill="#222">① 基本面：赚钱能力(ROE)、负债高不高</text>
-      <text x="40" y="92" fill="#222">② 估值：贵不贵(PE/PB/PEG)</text>
-      <text x="40" y="118" fill="#222">③ 成长：生意还在不在变大</text>
-      <text x="40" y="144" fill="#222">④ 技术：股价趋势多头/空头</text>
-      <text x="40" y="170" fill="#222">⑤ 资金：主力在买还是卖</text>
-      <text x="40" y="196" fill="#222">⑥ 风险：质押/商誉/ST 等雷</text>
-      <text x="40" y="228" fill="#d97706">硬过滤：踩中 ST/退市/造假 等</text>
-      <text x="40" y="250" fill="#d97706">→ 直接判"排除"，分数压低标红</text>
+      <text x="40" y="40" fill="#5b6b7b">五个维度：</text>
+      <text x="40" y="66" fill="#222">① 基本面35%：赚钱能力(ROE)、负债高不高</text>
+      <text x="40" y="92" fill="#222">② 估值20%：贵不贵(PE/PB/PEG)</text>
+      <text x="40" y="118" fill="#222">③ 成长25%：护城河能否转为市占率与利润</text>
+      <text x="40" y="144" fill="#222">④ 资金15%：主力长期趋势(20日净流入)</text>
+      <text x="40" y="170" fill="#222">⑤ 风险5%：质押/商誉/ST 等雷</text>
+      <text x="40" y="202" fill="#d97706">硬过滤：非AI行业 / ST / 退市 / 造假</text>
+      <text x="40" y="224" fill="#d97706">→ 直接判"排除"，分数压低标红</text>
     </svg>
     <div class="tip">分数高 ≠ 一定涨。它只是把"已知信息"量化成一个参考值。
-    <strong>基本面好、估值合理、趋势向上、资金流入</strong>的股票，分数自然高。</div>
+    V2.0 聚焦 <strong>AI 产业 + 护城河</strong>：<strong>基本面扎实、估值合理、护城河强且市占率提升、主力长期流入</strong>的股票，分数自然高。
+    技术分析(均线/MACD/KDJ)仅展示、不计入评分；系统<strong>不承诺收益率、不自动下单</strong>。</div>
   </section>
 
   <!-- ⑥ -->
   <section id="data">
     <h2>⑥ 数据从哪来？</h2>
     <div class="card">
-      <p>现在列表里的 <strong>15 只真实 A 股</strong>，数据是 <strong>2026-07-25</strong> 通过
+      <p>现在列表里的 <strong>15 只真实 AI 股票</strong>，数据是 <strong>2026-07-27</strong> 通过
       <strong>westock-data（腾讯自选股行情接口）</strong> 真实抓取的，包括：</p>
       <p>
         <span class="pill">实时价格</span><span class="pill">市盈率 PE / 市净率 PB</span>
@@ -204,11 +206,11 @@ python scripts/server.py</pre>
         <tr><th>字段</th><th>怎么来的</th><th>真实度</th></tr>
         <tr><td>价格 / PE / PB</td><td>行情接口实时值</td><td>✅ 真实</td></tr>
         <tr><td>ROE / 负债率</td><td>最新财报三张表计算</td><td>✅ 真实</td></tr>
-        <tr><td>均线 / MACD / KDJ / RSI</td><td>技术指标准实时计算</td><td>✅ 真实</td></tr>
-        <tr><td>主力净流入 / 机构流向</td><td>资金流接口</td><td>✅ 真实</td></tr>
+        <tr><td>均线 / MACD / KDJ / RSI</td><td>技术指标准实时计算（V2.0 仅展示，不参与评分）</td><td>✅ 真实</td></tr>
+        <tr><td>主力净流入 / 机构流向 / 20日长期趋势</td><td>资金流接口</td><td>✅ 真实</td></tr>
         <tr><td>三年利润预测 / PEG</td><td>分析师一致预期</td><td>✅ 真实</td></tr>
         <tr><td>行业参考 PE 均值</td><td>经验参考值</td><td>⚠️ 参考</td></tr>
-        <tr><td>护城河 / 行业空间</td><td>公开常识判断</td><td>⚠️ 定性</td></tr>
+        <tr><td>护城河 / 行业空间</td><td>公开常识判断（V2.0 护城河为选股核心）</td><td>⚠️ 定性</td></tr>
         <tr><td>北向资金态度</td><td>免费接口无逐股数据</td><td>⚪ 默认中性</td></tr>
         <tr><td>ST / 质押 / 商誉 等深风险</td><td>未自动抓取</td><td>⚪ 默认安全</td></tr>
       </table>
@@ -224,14 +226,15 @@ python scripts/server.py</pre>
       <ul>
         <li>🚫 <strong>不是投资建议。</strong>分数是固定规则算出来的参考，<strong>不保证赚钱</strong>。真金白银前请自己多做功课。</li>
         <li>⏱️ 数据是 <strong>抓取那一刻的快照</strong>，不会自动更新。想看最新，重新抓一次即可。</li>
-        <li>🧪 评分里的"目标价/买点/止损"都标了<strong>「推断」</strong>，是公式估算，别当铁律。</li>
+        <li>🧪 评分里的"合理估值/配置视图/长期研究逻辑"都标了<strong>「推断」</strong>，是定性研究结论，<strong>不承诺收益率、不给出目标价/买点/止损</strong>。</li>
+        <li>🤖 V2.0 聚焦 <strong>AI 产业</strong>：白酒、地产等非 AI 驱动行业会被<strong>自动排除</strong>；系统只看护城河与主力长期趋势，<strong>不做技术分析、不自动连接下单</strong>。</li>
         <li>🔒 本工具在<strong>你本地</strong>运行，数据不出你的电脑（除了抓取时向行情接口发请求）。</li>
       </ul>
     </div>
   </section>
 
   <footer>
-    股票筛选系统 · 小白使用说明 ｜ 数据快照 2026-07-25（westock-data / 腾讯自选股）<br>
+    股票筛选系统 · 小白使用说明（V2.0 AI产业聚焦）｜ 数据快照 2026-07-27（westock-data / 腾讯自选股）<br>
     ⚠️ 以上内容仅为工具使用说明，不构成任何投资建议或个股推荐。投资有风险，决策需谨慎。
   </footer>
 </div>

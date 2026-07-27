@@ -1,9 +1,13 @@
 -- =====================================================================
--- 股票基金筛选系统 · 规范建表脚本（schema.sql）
+-- 股票基金筛选系统 · 规范建表脚本（schema.sql）— V2.0 AI产业聚焦版
 -- 说明：本文件是 stocks 表的“单一事实来源”(single source of truth)。
 --       任何改表结构都必须同步修改本文件，并用 scripts/init_db.py 验证。
 --       字段顺序/类型与 scripts/db.py 的 FIELDS 保持一致。
--- 注意：volatility 在业务里是“低/中/高”分类值，必须是 TEXT，不能是 REAL。
+-- V2.0 变化：
+--   新增：market(市场)/board(板块)/ai_category(AI四分类)/ai_driven(是否AI驱动)
+--         /research_signals(信息来源信号)/main_force_trend(主力长期趋势)
+--   移除：target_price/buy_point/stop_loss/take_profit/expected_return（不承诺收益率）
+--   技术面字段(ma_trend等)保留列但【不参与评分】，遵循“不做技术分析”
 -- =====================================================================
 
 -- ---------- 标的基础库（多因子原始输入 + 计算产物） ----------
@@ -17,7 +21,7 @@ CREATE TABLE IF NOT EXISTS stocks (
     industry TEXT,
     price REAL,
 
-    -- 基本面 30%
+    -- 基本面 35%
     roe REAL,
     roa REAL,
     rev_growth_years REAL,
@@ -34,14 +38,14 @@ CREATE TABLE IF NOT EXISTS stocks (
     ev_ebitda REAL,
     safety_margin REAL,
 
-    -- 成长 20%
+    -- 成长 25%（含护城河核心逻辑）
     rd_increase INTEGER DEFAULT 0,
     mkt_share_growth INTEGER DEFAULT 0,
     industry_space TEXT,
     moat TEXT,
     profit_forecast_3y REAL,
 
-    -- 技术 15%
+    -- 技术（V2.0 保留字段但【不参与评分】，遵循“不做技术分析”）
     ma_trend TEXT,
     macd TEXT,
     kdj TEXT,
@@ -49,10 +53,18 @@ CREATE TABLE IF NOT EXISTS stocks (
     volume TEXT,
     volatility TEXT,            -- 低/中/高（分类，必须 TEXT）
 
-    -- 资金 10%
-    main_fund_flow TEXT,
-    northbound TEXT,
-    institution_change TEXT,
+    -- 资金（V2.0 聚焦主力长期趋势，过滤散户/短期游资）
+    main_fund_flow TEXT,        -- 短期主力净流入（仅供参考展示）
+    northbound TEXT,            -- 北向（长期机构信号）
+    institution_change TEXT,    -- 机构动向（长期机构信号）
+    main_force_trend TEXT,      -- 主力长期趋势：流入/流出/持平（由20日主力净流入判定）
+
+    -- 范围与 AI 分类（V2.0 新增）
+    market TEXT,                -- A股 / 港股 / A+H
+    board TEXT,                 -- 主板/创业板/科创板/北交所/H股/红筹/民营港股
+    ai_category TEXT,           -- 核心基础/模型平台/AI革命/AI医药
+    ai_driven INTEGER DEFAULT 1,-- 1=AI驱动 0=非AI（0则硬排除）
+    research_signals TEXT,      -- 信息来源信号：公告;产品进展;技术突破;客户采用;产业变化;监管动态
 
     -- 软风险 5%（软因子，参与评分扣分）
     financial_risk INTEGER DEFAULT 0,
@@ -74,17 +86,14 @@ CREATE TABLE IF NOT EXISTS stocks (
     rating TEXT,
     recommend_index TEXT,
     risk_flags TEXT,
-    target_price REAL,
-    reasonable_valuation TEXT,
-    buy_point TEXT,
-    stop_loss REAL,
-    take_profit REAL,
-    suggested_position TEXT,
-    expected_return TEXT,
-    expected_hold TEXT,
+    reasonable_valuation TEXT,  -- 估值看法（定性，非目标价）
+    suggested_position TEXT,    -- 配置视图：核心配置/卫星配置/观察/回避
+    expected_hold TEXT,         -- 持有期（长期，无短线）
     advantages TEXT,
     risks_text TEXT,
-    recommend_reasons TEXT
+    recommend_reasons TEXT,
+    core_competence TEXT,       -- 核心竞争力/护城河摘要
+    long_term_thesis TEXT       -- 长期研究逻辑
 );
 
 -- ---------- 组合表（稳健 / 成长 / 激进） ----------
