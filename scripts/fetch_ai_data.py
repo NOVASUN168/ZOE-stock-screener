@@ -13,7 +13,9 @@ V2.0 新增：market/board/ai_category/ai_driven/research_signals。
 import os
 import sys
 import json
+import time
 import subprocess
+import urllib.request
 
 NODE = "C:/Users/zsgre/.workbuddy/binaries/node/versions/22.22.2/node.exe"
 SK = "C:/Program Files/WorkBuddy/resources/app.asar.unpacked/resources/builtin-skills/westock-data/scripts/index.js"
@@ -110,6 +112,83 @@ def first_table_with(text, key_substr):
     return None
 
 
+# ---------- 新浪财经三表（主 ROE 数据源，quotes.sina.cn，稳定不封IP）----------
+def _sina_report(paper_code, source, num=8):
+    """新浪财报三表 JSON 接口（利润表 lrb / 资产负债表 fzb / 现金流量表 llb）。"""
+    url = "https://quotes.sina.cn/cn/api/openapi.php/CompanyFinanceService.getFinanceReport2022"
+    params = "paperCode=%s&source=%s&type=0&page=1&num=%d" % (paper_code, source, num)
+    req = urllib.request.Request(url + "?" + params, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Referer": "https://quotes.sina.cn/",
+    })
+    d = json.loads(urllib.request.urlopen(req, timeout=15).read().decode("utf-8", "replace"))
+    rl = (d.get("result") or {}).get("data") or {}
+    return rl.get("report_list") or {}
+
+
+def _row_of(rl, prefer_annual=True):
+    """取最新一期（优先年报 1231）的 {科目: 数值} 字典。"""
+    periods = sorted(rl.keys(), reverse=True)
+    if prefer_annual:
+        for p in periods:
+            if p.endswith("1231"):
+                return p, {it.get("item_title"): fnum(it.get("item_value"))
+                           for it in (rl[p].get("data") or [])}
+    p = periods[0]
+    return p, {it.get("item_title"): fnum(it.get("item_value"))
+               for it in (rl[p].get("data") or [])}
+
+
+def fetch_sina_financials(code):
+    """新浪财报三表取 ROE/ROA/资产负债率/经营现金流。仅 A 股(sh/sz)；港股返回 None。"""
+    if not code or code.startswith("hk"):
+        return None
+    digit = code[2:] if code[:2] in ("sh", "sz") else code
+    paper = ("sh" if digit.startswith(("6", "9")) else "sz") + digit
+    try:
+        lrb = _sina_report(paper, "lrb", 8)
+        time.sleep(0.4)
+        fzb = _sina_report(paper, "fzb", 8)
+        time.sleep(0.4)
+        llb = _sina_report(paper, "llb", 4)
+    except Exception:
+        return None
+    if not lrb or not fzb:
+        return None
+
+    np_period, np_row = _row_of(lrb, prefer_annual=True)
+    fzb_period, fz_row = _row_of(fzb, prefer_annual=True)
+    # 资产负债表的期次尽量与利润表一致（同口径 ROE）
+    if fzb_period != np_period and np_period in fzb:
+        fz_row = {it.get("item_title"): fnum(it.get("item_value"))
+                  for it in (fzb[np_period].get("data") or [])}
+
+    np_tsx = np_row.get("归属于母公司所有者的净利润")
+    equity = fz_row.get("归属于母公司股东权益合计") or fz_row.get("所有者权益(或股东权益)合计")
+    ta = fz_row.get("资产总计")
+    tl = fz_row.get("负债合计")
+    op = np_row.get("营业利润")
+    cash = fz_row.get("货币资金")
+
+    fcf = None
+    if llb:
+        lp = sorted(llb.keys(), reverse=True)[0]
+        ll_row = {it.get("item_title"): fnum(it.get("item_value"))
+                  for it in (llb[lp].get("data") or [])}
+        fcf = ll_row.get("经营活动产生的现金流量净额")
+
+    res = {"roe": None, "roa": None, "debt_ratio": None, "fcf_positive": 0,
+           "op": op, "cash": cash, "tl": tl}
+    if np_tsx is not None and equity:
+        res["roe"] = round(np_tsx / equity * 100, 1)
+    if np_tsx is not None and ta:
+        res["roa"] = round(np_tsx / ta * 100, 1)
+    if tl is not None and ta:
+        res["debt_ratio"] = round(tl / ta * 100, 1)
+    res["fcf_positive"] = 1 if (fcf is not None and fcf > 0) else 0
+    return res
+
+
 def clamp(v, lo, hi):
     return max(lo, min(hi, v))
 
@@ -140,36 +219,47 @@ def build_one(t):
     else:
         d["price"] = d["pe"] = d["pb"] = None
 
-    # 2) FINANCE（港股可能为空，优雅降级）
-    lrb = first_table_with(run(["finance", code]), "NPParentCompanyOwnersTTM")
-    zcfz = first_table_with(run(["finance", code]), "TotalLiability")
-    xjll = first_table_with(run(["finance", code]), "NetOperateCashFlowTTM")
-    np_ttm = fnum(lrb[0].get("NPParentCompanyOwnersTTM")) if lrb else None
-    op_ttm = fnum(lrb[0].get("OperatingProfitTTM")) if lrb else None
-    if zcfz:
-        z = zcfz[0]
-        eq = fnum(z.get("TotalShareholderEquity"))
-        tl = fnum(z.get("TotalLiability"))
-        tca = fnum(z.get("TotalCurrentAssets"))
-        tnca = fnum(z.get("TotalNonCurrentAssets"))
-        cash = fnum(z.get("CashEquivalents"))
-        ta = (tca + tnca) if (tca is not None and tnca is not None) else None
-        if np_ttm is not None and eq:
-            d["roe"] = round(np_ttm / eq * 100, 1)
-        if np_ttm is not None and ta:
-            d["roa"] = round(np_ttm / ta * 100, 1)
-        if tl is not None and ta:
-            d["debt_ratio"] = round(tl / ta * 100, 1)
-        if op_ttm and d.get("_mktcap"):
+    # 2) FINANCE — 主源：新浪财报三表(quotes.sina.cn，稳定不封IP)；兜底：westock-data finance
+    sina = fetch_sina_financials(code)
+    if sina and sina.get("roe") is not None:
+        d["roe"] = sina["roe"]
+        d["roa"] = sina.get("roa")
+        d["debt_ratio"] = sina.get("debt_ratio")
+        d["fcf_positive"] = sina.get("fcf_positive", 0)
+        if sina.get("op") is not None and d.get("_mktcap"):
+            tl = sina.get("tl"); cash = sina.get("cash")
             ev = d["_mktcap"] + (tl or 0) - (cash or 0)
-            d["ev_ebitda"] = round(ev / op_ttm, 1)
-    d["fcf_positive"] = 0  # 默认 0；若现金流表为空则保持 0（与入库一致，避免 None 半分不一致）
-    if xjll:
-        fcf = fnum(xjll[0].get("NetOperateCashFlowTTM"))
-        if fcf is not None and fcf > 0:
-            d["fcf_positive"] = 1
-    if "roe" not in d:
-        d["roe"] = d["roa"] = d["debt_ratio"] = None
+            d["ev_ebitda"] = round(ev / sina["op"], 1) if sina["op"] else None
+    else:
+        lrb = first_table_with(run(["finance", code]), "NPParentCompanyOwnersTTM")
+        zcfz = first_table_with(run(["finance", code]), "TotalLiability")
+        xjll = first_table_with(run(["finance", code]), "NetOperateCashFlowTTM")
+        np_ttm = fnum(lrb[0].get("NPParentCompanyOwnersTTM")) if lrb else None
+        op_ttm = fnum(lrb[0].get("OperatingProfitTTM")) if lrb else None
+        if zcfz:
+            z = zcfz[0]
+            eq = fnum(z.get("TotalShareholderEquity"))
+            tl = fnum(z.get("TotalLiability"))
+            tca = fnum(z.get("TotalCurrentAssets"))
+            tnca = fnum(z.get("TotalNonCurrentAssets"))
+            cash = fnum(z.get("CashEquivalents"))
+            ta = (tca + tnca) if (tca is not None and tnca is not None) else None
+            if np_ttm is not None and eq:
+                d["roe"] = round(np_ttm / eq * 100, 1)
+            if np_ttm is not None and ta:
+                d["roa"] = round(np_ttm / ta * 100, 1)
+            if tl is not None and ta:
+                d["debt_ratio"] = round(tl / ta * 100, 1)
+            if op_ttm and d.get("_mktcap"):
+                ev = d["_mktcap"] + (tl or 0) - (cash or 0)
+                d["ev_ebitda"] = round(ev / op_ttm, 1)
+        d["fcf_positive"] = 0  # 默认 0；兜底路径现金流表为空则保持 0
+        if xjll:
+            fcf = fnum(xjll[0].get("NetOperateCashFlowTTM"))
+            if fcf is not None and fcf > 0:
+                d["fcf_positive"] = 1
+        if "roe" not in d:
+            d["roe"] = d["roa"] = d["debt_ratio"] = None
     if "ev_ebitda" not in d:
         d["ev_ebitda"] = None
 
