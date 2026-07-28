@@ -94,6 +94,43 @@
   .inline-form .field{width:auto;min-width:140px}
   .note{font-size:12px;color:var(--muted);background:var(--blue);border:1px solid #bfdbfe;
     padding:8px 12px;border-radius:8px;margin-bottom:12px}
+  /* ===== 新增模块：登录态 / 筛选方案 / 付费墙 ===== */
+  .userbox{position:relative;display:flex;align-items:center;gap:8px}
+  .uibadge{background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;white-space:nowrap}
+  .umenu{position:absolute;top:42px;right:0;background:#fff;color:var(--ink);border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);min-width:210px;z-index:60;padding:8px}
+  .umenu hr{border:none;border-top:1px solid var(--line);margin:8px 0}
+  .umenu button{width:calc(100% - 20px);margin:4px 10px;text-align:left;background:#f8fafc;color:var(--ink)}
+  .umenu label{font-size:11px;color:var(--muted);padding:0 10px;display:block}
+  .umenu input{width:calc(100% - 20px);margin:4px 10px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-family:inherit}
+  .scheme-wrap{display:grid;grid-template-columns:280px 1fr 330px;gap:14px;align-items:start}
+  .col{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .col .scroll{max-height:74vh;overflow:auto;padding:12px}
+  .catalog-grp{margin-bottom:10px}
+  .catalog-grp h4{margin:6px 0;font-size:12px;color:var(--brand2)}
+  .cat-item{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:.12s}
+  .cat-item:hover{border-color:var(--brand);background:var(--blue)}
+  .cat-item .cn{font-weight:600;font-size:13px}
+  .cat-item .cu{font-size:11px;color:var(--muted)}
+  .cat-item .cd{font-size:11px;color:var(--muted);margin-top:2px}
+  .cat-item.locked{opacity:.75}
+  .lock{color:var(--amber);font-size:11px;font-weight:700}
+  .scheme-card{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px;cursor:pointer;transition:.12s}
+  .scheme-card:hover{border-color:var(--brand);background:var(--blue)}
+  .scheme-card.active{border-color:var(--brand);background:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.15)}
+  .scheme-card .sn{font-weight:700;font-size:13px}
+  .scheme-card .sm{font-size:11px;color:var(--muted)}
+  .cond-row{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px}
+  .cond-row .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .cond-row .cname{font-weight:600;font-size:13px}
+  .cond-row .vals{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+  .cond-row input,.cond-row select{padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit}
+  .cond-row input[type=number]{width:96px}
+  .paywall{background:#fffbeb;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:14px;margin-top:10px;font-size:13px}
+  .paywall code{background:#fef3c7}
+  .vrow{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
+  .logtbl td,.logtbl th{font-size:12px}
+  @media(max-width:1100px){.scheme-wrap{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -106,6 +143,7 @@
   <button class="btn-ghost" id="btnExport">⬇ 导出 JSON</button>
   <button class="btn-ghost" id="btnRescore">🔄 重算评分</button>
   <button class="btn-primary" id="btnAdd">＋ 新增股票</button>
+  <div class="userbox" id="userBox"></div>
 </header>
 
 <nav class="tabs">
@@ -114,6 +152,8 @@
   <button class="tab" data-tab="port">💼 组合推荐</button>
   <button class="tab" data-tab="review">📅 每日复盘</button>
   <button class="tab" data-tab="gloss">📖 新手术语</button>
+  <button class="tab" data-tab="scheme">🔧 筛选方案</button>
+  <button class="tab" data-tab="account">💳 订阅 / 账户</button>
 </nav>
 
 <!-- ============ 工作台 ============ -->
@@ -237,6 +277,100 @@
   </div>
 </section>
 
+<!-- ============ 筛选方案（新增模块） ============ -->
+<section id="panel-scheme">
+  <div class="wrap">
+    <div class="note">🔧 <b>数据驱动筛选方案</b>：左侧点选条件目录 → 中部编辑/保存/应用方案 → 右侧查看版本历史与操作日志。所有写操作需登录；权限 owner&gt;admin&gt;editor&gt;viewer，付费条件需激活授权码 <code>ZOE-PREMIUM-xxx</code> 解锁。</div>
+    <div class="scheme-wrap">
+      <!-- 左：条件目录 -->
+      <div class="col">
+        <div class="toolbar" style="border-radius:12px 12px 0 0">
+          <input id="catSearch" placeholder="搜索条件名…" style="flex:1">
+        </div>
+        <div id="catalogBody" class="scroll"></div>
+      </div>
+      <!-- 中：方案列表 + 条件编辑器 -->
+      <div class="col">
+        <div class="toolbar" style="border-radius:12px 12px 0 0;justify-content:space-between">
+          <b>方案列表</b>
+          <button class="btn-primary btn-sm" id="btnNewScheme">＋ 新建方案</button>
+        </div>
+        <div id="schemeList" class="scroll" style="max-height:26vh"></div>
+        <div class="sheet-body">
+          <div class="inline-form">
+            <div class="field" style="flex:1"><label>方案名</label><input id="schemeName" placeholder="如：低估值高ROE"></div>
+            <div class="field" style="flex:2"><label>描述</label><input id="schemeDesc" placeholder="可选"></div>
+            <div class="field chk"><input type="checkbox" id="schemeShared"><label for="schemeShared">共享</label></div>
+          </div>
+          <div class="grp"><h3>当前方案条件</h3><div id="condList"></div></div>
+          <div class="toolbar" style="border-radius:10px;position:sticky;bottom:0;background:#fff">
+            <button class="btn-primary btn-sm" id="btnSaveScheme">💾 保存</button>
+            <button class="btn-line btn-sm" id="btnSnapScheme">📸 快照</button>
+            <button class="btn-line btn-sm" id="btnApplyScheme">▶ 应用</button>
+            <button class="btn-line btn-sm" id="btnPinScheme">⭐ 置顶</button>
+            <button class="btn-danger btn-sm" id="btnDelScheme">🗑 删除</button>
+            <button class="btn-line btn-sm" id="btnExportScheme">📤 导出git</button>
+            <button class="btn-line btn-sm" id="btnPullScheme">🔄 下拉刷新</button>
+          </div>
+        </div>
+        <div id="screenResult" class="scroll" style="padding:12px"></div>
+      </div>
+      <!-- 右：版本历史 + 操作日志 + 用户管理 -->
+      <div class="col">
+        <div class="card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--line)">
+          <h3>🕑 版本历史</h3><div id="versionList"></div>
+        </div>
+        <div class="card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--line)">
+          <h3>📜 操作日志</h3><div id="opLogList" class="scroll" style="max-height:30vh"></div>
+        </div>
+        <div class="card" id="userMgmt" style="margin:0;border-radius:0;border:none;display:none"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 订阅 / 账户 ============ -->
+<section id="panel-account">
+  <div class="wrap">
+    <div class="note">💳 <b>订阅 / 账户</b>：订阅后可解锁全部高级筛选条件。也可使用离线激活码 <code>ZOE-PREMIUM-xxx</code> 解锁，两种途径效果一致。</div>
+    <div class="card">
+      <h3>当前订阅状态</h3>
+      <div class="kv" id="billingStatus">
+        <div><b id="billingTier">—</b><span>当前版本</span></div>
+        <div><b id="billingExpiry">—</b><span>到期日</span></div>
+        <div><b id="billingMode">—</b><span>计费模式</span></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-primary" id="btnCheckout">💳 前往订阅</button>
+        <span class="mini" id="checkoutHint"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>离线激活码</h3>
+      <div class="inline-form" style="margin-bottom:0">
+        <div class="field" style="flex:1;min-width:200px"><label>激活授权码</label><input id="accLicKey" placeholder="ZOE-PREMIUM-xxxx"></div>
+        <button class="btn-line" id="btnAccActivate">激活授权</button>
+      </div>
+      <div class="mini" style="margin-top:8px">说明：授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁全部高级筛选条件；订阅后亦可获得同等授权。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 登录 弹窗 -->
+<div class="modal" id="loginModal">
+  <div class="sheet" style="width:min(420px,100%)">
+    <div class="sheet-head"><h2>登录</h2><div class="spacer"></div><button class="btn-line btn-sm" id="loginClose">关闭</button></div>
+    <div class="sheet-body">
+      <div class="field"><label>用户名</label><input id="loginUser" placeholder="用户名"></div>
+      <div class="field"><label>密码</label><input id="loginPass" type="password" placeholder="密码"></div>
+      <button class="btn-primary" id="loginBtn" style="margin-top:6px">登录</button>
+      <div class="note" style="margin-top:12px">离线测试授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁付费条件。</div>
+      <div class="field" style="margin-top:4px"><label>激活授权码（可选）</label><input id="licKey" placeholder="ZOE-PREMIUM-xxxx"></div>
+      <button class="btn-line btn-sm" id="licBtn">激活授权</button>
+    </div>
+  </div>
+</div>
+
 <!-- 新增/编辑 弹窗 -->
 <div class="modal" id="formModal">
   <div class="sheet">
@@ -352,6 +486,8 @@ function switchTab(name){
   if(name==="alert") loadAlertTab();
   if(name==="port") {/* 等待用户点类型 */}
   if(name==="review") loadReview();
+  if(name==="scheme") loadSchemeTab();
+  if(name==="account") loadAccountTab();
 }
 
 // ---------- 渲染表单 ----------
@@ -577,6 +713,555 @@ async function exportJSON(){
   a.download="stock-screener-export.json";a.click();toast("已导出 "+rows.length+" 条");
 }
 
+// =================== 新增模块：登录态 / 筛选方案 / 付费墙 ===================
+const state = {
+  user: getUser(),
+  token: getToken(),
+  tier: null,            // 'free' | 'premium'
+  billing: {enabled:false, mode:"test", tier:null, expiry:null},  // 来自 /api/billing/status
+  catalog: [],
+  schemes: [],
+  currentScheme: null,   // {id,name,description,is_shared,is_pinned,...}
+  conditions: [],        // 编辑器条件 [{catalog_key,operator,value,value2,enabled,_meta}]
+  dirty: false,
+};
+window.__rowCache = [];  // 股票结果行缓存，供详情弹窗使用
+
+// ---------- 基础工具 ----------
+function getToken(){ return localStorage.getItem("zoe_token"); }
+function getUser(){ try{ return JSON.parse(localStorage.getItem("zoe_user")||"null"); }catch(e){ return null; } }
+function roleRank(role){ return {viewer:1,editor:2,admin:3,owner:4}[role]||0; }
+function isLoggedIn(){ return !!state.user; }
+function canEdit(){ return isLoggedIn() && roleRank(state.user.role)>=2; }   // editor+
+function canAdmin(){ return isLoggedIn() && (state.user.role==="admin"||state.user.role==="owner"); }
+function canOwner(){ return isLoggedIn() && state.user.role==="owner"; }
+function roleLabel(r){ return {owner:"拥有者",admin:"管理员",editor:"编辑",viewer:"只读"}[r]||r; }
+function tierLabel(){ return state.tier==="premium"?"premium":"free"; }
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// 统一请求封装：自动带 Bearer；401->清 token 并跳登录；403->提示无权限
+async function api(method, path, body){
+  const opt={method, headers:{}};
+  const tk=getToken();
+  if(tk) opt.headers["Authorization"]="Bearer "+tk;
+  if(body!==undefined){ opt.headers["Content-Type"]="application/json"; opt.body=JSON.stringify(body); }
+  const res=await fetch(path, opt);
+  let data=null;
+  try{ const t=await res.text(); data=t?JSON.parse(t):null; }catch(e){ data=null; }
+  if(res.status===401){
+    localStorage.removeItem("zoe_token"); localStorage.removeItem("zoe_user");
+    state.user=null; state.token=null; renderUserBox();
+    openLogin("登录已失效或未完成，请重新登录");
+    const e=new Error("unauthorized"); e.status=401; throw e;
+  }
+  if(res.status===403){
+    toast("无权限：当前角色（"+(state.user?roleLabel(state.user.role):"未登录")+"）不可执行该操作");
+    const e=new Error("forbidden"); e.status=403; throw e;
+  }
+  return {res, data};
+}
+
+// ---------- 用户态 UI ----------
+function renderUserBox(){
+  const box=document.getElementById("userBox");
+  const u=state.user;
+  if(!u){ box.innerHTML=`<button class="btn-primary btn-sm" onclick="openLogin()">登录</button>`; return; }
+  box.innerHTML=`<div class="uibadge">👤 ${esc(u.display_name||u.username)} · ${roleLabel(u.role)} · <span id="tierTag">${tierLabel()}</span></div>
+    <button class="btn-ghost btn-sm" onclick="toggleUserMenu()">▼</button>
+    <div class="umenu" id="userMenu" style="display:none">
+      <label>🔓 激活授权码（解锁付费条件）</label>
+      <input id="licKey2" placeholder="ZOE-PREMIUM-xxxx">
+      <button class="btn-line btn-sm" id="licBtn2">激活授权</button>
+      <hr>
+      <button onclick="doLogout()">退出登录</button>
+    </div>`;
+  document.getElementById("licBtn2").onclick=activateLicense;
+}
+function toggleUserMenu(){
+  const m=document.getElementById("userMenu");
+  if(m) m.style.display = (m.style.display==="none"||!m.style.display)?"block":"none";
+}
+async function refreshLicense(){
+  try{ const {res,data}=await api("GET","/api/license/status"); if(res.ok&&data) state.tier=data.tier||state.tier; }catch(e){}
+  const tag=document.getElementById("tierTag"); if(tag) tag.textContent=tierLabel();
+}
+async function restoreSession(){
+  const tk=getToken();
+  if(!tk){ renderUserBox(); return; }
+  try{
+    const {res,data}=await api("GET","/api/auth/me");
+    if(res.ok){ state.user=data.user; localStorage.setItem("zoe_user",JSON.stringify(data.user)); }
+  }catch(e){ /* api 已处理 401 */ }
+  await refreshLicense();
+  renderUserBox();
+}
+function openLogin(msg){ if(msg) toast(msg);
+  document.getElementById("loginUser").value="";
+  document.getElementById("loginPass").value="";
+  document.getElementById("licKey").value="";
+  document.getElementById("loginModal").classList.add("open");
+}
+function closeLogin(){ document.getElementById("loginModal").classList.remove("open"); }
+async function doLogin(){
+  const username=document.getElementById("loginUser").value.trim();
+  const password=document.getElementById("loginPass").value;
+  if(!username||!password){ toast("请输入用户名和密码"); return; }
+  try{
+    const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});
+    const d=await res.json();
+    if(res.ok){
+      localStorage.setItem("zoe_token",d.token); localStorage.setItem("zoe_user",JSON.stringify(d.user));
+      state.user=d.user; state.token=d.token; closeLogin(); renderUserBox();
+      await refreshLicense();
+      if(document.getElementById("panel-scheme").classList.contains("active")) loadSchemeTab();
+      toast("登录成功："+(d.user.display_name||d.user.username));
+    } else { toast("登录失败："+(d.error||"401")); }
+  }catch(e){ toast("登录请求失败"); }
+}
+async function doLogout(){
+  try{ await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+getToken()}}); }catch(e){}
+  localStorage.removeItem("zoe_token"); localStorage.removeItem("zoe_user");
+  state.user=null; state.token=null; state.tier=null; state.currentScheme=null; state.conditions=[]; state.dirty=false;
+  renderUserBox(); toast("已退出登录");
+  if(document.getElementById("panel-scheme").classList.contains("active")) loadSchemeTab();
+}
+async function activateLicense(key){
+  if(!key){
+    let k=(document.getElementById("licKey2")||{value:""}).value.trim();
+    if(!k){ const el=document.getElementById("licKey"); k=el?el.value.trim():""; }
+    key=k;
+  }
+  if(!key){ toast("请输入授权码"); return; }
+  try{
+    const {res,data}=await api("POST","/api/license/activate",{key});
+    if(res.ok){ state.tier=data.tier||"premium"; await refreshLicense(); renderUserBox();
+      toast("授权已激活："+(data.tier||"premium")+(data.expiry?" · 至 "+data.expiry:"")); }
+    else { toast("激活失败："+(data&&data.error||res.status)); }
+  }catch(e){}
+}
+
+// ---------- 订阅 / 账户 ----------
+async function loadBilling(){
+  try{
+    const {res,data}=await api("GET","/api/billing/status");
+    if(res.ok && data){ state.billing=data; }
+  }catch(e){ /* 401/403 已由 api 处理 */ }
+  return state.billing;
+}
+async function openCheckout(){
+  try{
+    const {res,data}=await api("POST","/api/billing/checkout",{plan:"premium_monthly"});
+    if(res.ok && data && data.ok && data.checkout_url){
+      window.open(data.checkout_url, "_blank");
+    } else if(data && data.error==="billing_not_configured"){
+      toast("商家尚未开启在线订阅，可使用下方激活码");
+    } else {
+      toast("无法发起订阅："+(data&&data.error||res.status));
+    }
+  }catch(e){}
+}
+async function loadAccountTab(){
+  const b=await loadBilling();
+  renderBilling(b);
+}
+function renderBilling(b){
+  const tierEl=document.getElementById("billingTier");
+  const expEl=document.getElementById("billingExpiry");
+  const modeEl=document.getElementById("billingMode");
+  const btn=document.getElementById("btnCheckout");
+  const hint=document.getElementById("checkoutHint");
+  if(!tierEl) return;
+  tierEl.textContent = (b && b.tier==="premium") ? "高级版" : "免费版";
+  expEl.textContent = (b && b.expiry) ? b.expiry : "未设置";
+  modeEl.textContent = (b && b.mode) ? (b.mode==="live"?"正式":"测试") : "—";
+  if(b && b.enabled){
+    btn.disabled=false; btn.onclick=openCheckout; hint.textContent="";
+  }else{
+    btn.disabled=true; btn.onclick=null; hint.textContent="在线订阅未开启";
+  }
+}
+async function activateFromAccount(){
+  const el=document.getElementById("accLicKey");
+  const key=el ? el.value.trim() : "";
+  if(!key){ toast("请输入激活码"); return; }
+  await activateLicense(key);
+  await loadBilling(); renderBilling(state.billing);
+  if(el) el.value="";
+}
+
+// ---------- 筛选方案 ----------
+async function loadSchemeTab(){
+  if(!isLoggedIn()){ renderSchemeLocked(); return; }
+  await Promise.all([loadCatalog(), loadSchemes(), loadOpLogs()]);
+  renderEditorButtons();
+}
+function renderSchemeLocked(){
+  document.getElementById("catalogBody").innerHTML=`<div class="empty">请先登录以使用筛选方案（右上角「登录」）。</div>`;
+  document.getElementById("schemeList").innerHTML="";
+  document.getElementById("condList").innerHTML="";
+  document.getElementById("screenResult").innerHTML="";
+  document.getElementById("versionList").innerHTML="";
+  document.getElementById("opLogList").innerHTML="";
+  renderEditorButtons();
+}
+const OP_LABELS={gt:"大于",lt:"小于",between:"介于",eq:"等于",neq:"不等于",in:"属于",like:"包含"};
+const OP_BY_FTYPE={numeric:["gt","lt","between","eq"], enum:["in","eq","neq"], bool:["eq"]};
+function defaultOp(ftype){ return OP_BY_FTYPE[ftype]?OP_BY_FTYPE[ftype][0]:"eq"; }
+
+async function loadCatalog(){
+  const {res,data}=await api("GET","/api/filter-catalog");
+  if(res.ok) state.catalog=data||[];
+  renderCatalog();
+}
+function renderCatalog(){
+  const body=document.getElementById("catalogBody");
+  const q=(document.getElementById("catSearch").value||"").trim().toLowerCase();
+  const order=["财务","估值","资金","技术","题材","风险"];
+  const groups={};
+  (state.catalog||[]).forEach(it=>{ if(q && !((it.name||"").toLowerCase().includes(q))) return; (groups[it.grp]=groups[it.grp]||[]).push(it); });
+  let html="";
+  order.concat(Object.keys(groups).filter(g=>!order.includes(g))).forEach(g=>{
+    const items=groups[g]; if(!items||!items.length) return;
+    html+=`<div class="catalog-grp"><h4>${esc(g)}</h4>`;
+    items.forEach(it=>{
+      const locked=it.is_premium===1||it.is_premium==="1";
+      const unit=it.unit?("（"+esc(it.unit)+"）"):"";
+      const lock=locked?` <span class="lock">🔒 需授权</span>`:"";
+      html+=`<div class="cat-item ${locked?"locked":""}" onclick="addCondition('${esc(it.key)}')">
+        <div class="cn">${esc(it.name)}${lock}</div>
+        <div class="cu">${unit} <code>${esc(it.key)}</code> · ${esc(it.ftype)}</div>
+        ${it.description?`<div class="cd">${esc(it.description)}</div>`:""}
+      </div>`;
+    });
+    html+=`</div>`;
+  });
+  body.innerHTML=html||`<div class="mini">无匹配条件。</div>`;
+}
+function catalogItem(key){ return (state.catalog||[]).find(it=>it.key===key); }
+function enumVals(meta){
+  let e=meta.enum_values;
+  if(Array.isArray(e)) return e.map(String);
+  if(typeof e==="string"&&e) return e.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+  return [];
+}
+function addCondition(key){
+  const meta=catalogItem(key); if(!meta){ toast("目录未加载，请刷新"); return; }
+  const op=meta.operator||defaultOp(meta.ftype);
+  const c={catalog_key:key, operator:op, value:"", value2:"", enabled:true, _meta:meta};
+  if(meta.ftype==="enum"){ const ev=enumVals(meta); if(ev.length) c.value=ev[0]; }
+  if(meta.ftype==="bool"){ c.value="1"; }
+  state.conditions.push(c); state.dirty=true; renderConditions(); renderEditorButtons();
+}
+function renderConditions(){
+  const el=document.getElementById("condList");
+  if(!state.conditions.length){ el.innerHTML=`<div class="mini">尚未添加条件。点击左侧目录项加入。</div>`; return; }
+  el.innerHTML=state.conditions.map((c,idx)=>{
+    const m=c._meta||catalogItem(c.catalog_key)||{};
+    const locked=m.is_premium===1||m.is_premium==="1";
+    const ops=(OP_BY_FTYPE[m.ftype]||["eq"]).map(o=>`<option value="${o}" ${c.operator===o?"selected":""}>${OP_LABELS[o]||o}</option>`).join("");
+    let valHtml="";
+    if(m.ftype==="enum"){
+      const opts=enumVals(m).map(v=>`<option value="${esc(v)}" ${String(c.value)===String(v)?"selected":""}>${esc(v)}</option>`).join("");
+      valHtml=`<select data-cidx="${idx}" data-cfield="value">${opts}</select>`;
+    } else if(m.ftype==="bool"){
+      valHtml=`<select data-cidx="${idx}" data-cfield="value">
+        <option value="1" ${c.value==="1"?"selected":""}>是</option>
+        <option value="0" ${c.value!=="1"?"selected":""}>否</option></select>`;
+    } else {
+      if(c.operator==="between"){
+        valHtml=`<input type="number" data-cidx="${idx}" data-cfield="value" value="${esc(c.value)}" placeholder="最小">
+          <span>~</span>
+          <input type="number" data-cidx="${idx}" data-cfield="value2" value="${esc(c.value2)}" placeholder="最大">`;
+      } else {
+        valHtml=`<input type="number" data-cidx="${idx}" data-cfield="value" value="${esc(c.value)}" placeholder="数值">`;
+      }
+    }
+    return `<div class="cond-row">
+      <div class="top">
+        <span class="cname">${esc(m.name||c.catalog_key)}</span>
+        ${locked?`<span class="lock">🔒</span>`:""}
+        <span class="cu">${m.unit?esc(m.unit):""}</span>
+        <span class="spacer" style="flex:1"></span>
+        <label class="mini"><input type="checkbox" data-cidx="${idx}" data-cfield="enabled" ${c.enabled?"checked":""}> 启用</label>
+        <button class="btn-danger btn-sm" onclick="removeCondition(${idx})">删除</button>
+      </div>
+      <div class="vals">
+        <select data-cidx="${idx}" data-cfield="operator" onchange="onOpChange(${idx},this.value)">${ops}</select>
+        ${valHtml}
+      </div>
+    </div>`;
+  }).join("");
+}
+function onOpChange(idx,newOp){
+  state.conditions=readConditionsFromDOM();
+  state.conditions[idx].operator=newOp;
+  state.dirty=true; renderConditions(); renderEditorButtons();
+}
+function removeCondition(idx){ state.conditions.splice(idx,1); state.dirty=true; renderConditions(); renderEditorButtons(); }
+function readConditionsFromDOM(){
+  return state.conditions.map((c,idx)=>{
+    const m=c._meta||catalogItem(c.catalog_key)||{};
+    const op=document.querySelector(`[data-cidx="${idx}"][data-cfield="operator"]`);
+    let value="", value2="";
+    if(m.ftype==="enum"||m.ftype==="bool"){
+      const v=document.querySelector(`[data-cidx="${idx}"][data-cfield="value"]`); value=v?v.value:"";
+    } else {
+      const v1=document.querySelector(`[data-cidx="${idx}"][data-cfield="value"]`);
+      const v2=document.querySelector(`[data-cidx="${idx}"][data-cfield="value2"]`);
+      value=v1?v1.value:""; value2=v2?v2.value:"";
+    }
+    const en=document.querySelector(`[data-cidx="${idx}"][data-cfield="enabled"]`);
+    return {catalog_key:c.catalog_key, operator:op?op.value:c.operator, value, value2, enabled:en?en.checked:true};
+  });
+}
+function cleanCondForSend(c){
+  const m=catalogItem(c.catalog_key)||{};
+  const out={catalog_key:c.catalog_key, operator:c.operator, value:c.value, value2:c.value2, enabled:c.enabled};
+  if(m.ftype==="numeric"){
+    out.value = (c.value===""||c.value==null)?null:parseFloat(c.value);
+    out.value2 = (c.operator==="between") ? ((c.value2===""||c.value2==null)?null:parseFloat(c.value2)) : null;
+  }
+  return out;
+}
+
+async function loadSchemes(){
+  const {res,data}=await api("GET","/api/schemes");
+  if(res.ok) state.schemes=data||[];
+  renderSchemeList();
+}
+function renderSchemeList(){
+  const el=document.getElementById("schemeList");
+  if(!state.schemes.length){ el.innerHTML=`<div class="mini">暂无方案。点击「＋ 新建方案」。</div>`; return; }
+  el.innerHTML=state.schemes.map(s=>{
+    const active=(state.currentScheme&&state.currentScheme.id===s.id)?"active":"";
+    const pin=s.is_pinned?"⭐":""; const share=s.is_shared?"🔗":"";
+    return `<div class="scheme-card ${active}" onclick="openScheme(${s.id})">
+      <div class="sn">${pin} ${esc(s.name)} ${share}</div>
+      <div class="sm">所有者：${esc(s.owner_name||s.owner||"-")} · 条件 ${Array.isArray(s.conditions)?s.conditions.length:0}</div>
+    </div>`;
+  }).join("");
+}
+async function openScheme(id){
+  const {res,data}=await api("GET","/api/schemes/"+id);
+  if(!res.ok){ toast("加载方案失败"); return; }
+  state.currentScheme={id, name:data.name, description:data.description, is_shared:!!data.is_shared, is_pinned:!!data.is_pinned};
+  state.conditions=(data.conditions||[]).map(c=>{
+    const meta=catalogItem(c.catalog_key)||{};
+    return {catalog_key:c.catalog_key, operator:c.operator, value:c.value??"", value2:c.value2??"", enabled:c.enabled!==0&&c.enabled!==false, _meta:meta};
+  });
+  state.dirty=false;
+  document.getElementById("schemeName").value=data.name||"";
+  document.getElementById("schemeDesc").value=data.description||"";
+  document.getElementById("schemeShared").checked=!!data.is_shared;
+  document.getElementById("screenResult").innerHTML="";
+  renderSchemeList(); renderConditions(); renderEditorButtons();
+  await loadVersions(id);
+}
+function newScheme(){
+  state.currentScheme=null; state.conditions=[]; state.dirty=false;
+  document.getElementById("schemeName").value="";
+  document.getElementById("schemeDesc").value="";
+  document.getElementById("schemeShared").checked=false;
+  document.getElementById("screenResult").innerHTML="";
+  document.getElementById("versionList").innerHTML="";
+  renderSchemeList(); renderConditions(); renderEditorButtons();
+}
+async function saveScheme(){
+  if(!canEdit()){ toast("无权限（需 editor 及以上）"); return; }
+  const name=document.getElementById("schemeName").value.trim();
+  const description=document.getElementById("schemeDesc").value.trim();
+  const is_shared=document.getElementById("schemeShared").checked?1:0;
+  if(!name){ toast("请填写方案名"); return; }
+  const conditions=readConditionsFromDOM().map(cleanCondForSend);
+  if(state.currentScheme&&state.currentScheme.id){
+    const {res,data}=await api("PUT","/api/schemes/"+state.currentScheme.id,{name,description,is_shared,conditions});
+    if(res.ok){ toast("已更新并自动快照"); state.dirty=false; await loadSchemes(); }
+    else toast("保存失败："+(data&&data.error||res.status));
+  } else {
+    const {res,data}=await api("POST","/api/schemes",{name,description,is_shared,conditions});
+    if(res.ok){ state.currentScheme={id:data.id,name,description,is_shared}; state.dirty=false; toast("已新建并自动快照"); await loadSchemes(); await loadVersions(data.id); }
+    else toast("新建失败："+(data&&data.error||res.status));
+  }
+}
+async function deleteScheme(){
+  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
+  if(!confirm("确认删除该方案？")) return;
+  const {res,data}=await api("DELETE","/api/schemes/"+state.currentScheme.id);
+  if(res.ok){ toast("已删除"); newScheme(); await loadSchemes(); }
+  else toast("删除失败："+(data&&data.error||res.status));
+}
+async function pinScheme(pinned){
+  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
+  if(!canEdit()){ toast("无权限"); return; }
+  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/pin",{pinned});
+  if(res.ok){ toast(pinned?"已置顶":"已取消置顶"); await loadSchemes(); } else toast("操作失败："+(data&&data.error||res.status));
+}
+async function snapshotScheme(){
+  if(!state.currentScheme||!state.currentScheme.id){ toast("请先保存方案再快照"); return; }
+  if(!canEdit()){ toast("无权限"); return; }
+  const note=prompt("快照备注（可选）：","")||"";
+  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/snapshot",{note});
+  if(res.ok){ toast("已快照"); await loadVersions(state.currentScheme.id); } else toast("快照失败："+(data&&data.error||res.status));
+}
+async function applyScheme(){
+  if(!state.conditions.length){ toast("请先添加筛选条件"); return; }
+  const body = (state.dirty || !state.currentScheme || !state.currentScheme.id)
+    ? {conditions: readConditionsFromDOM().map(cleanCondForSend)}
+    : {scheme_id: state.currentScheme.id};
+  try{
+    const {res,data}=await api("POST","/api/screen",body);
+    if(res.status===402){
+      const key=(data&&data.condition)?"<code>"+esc(data.condition)+"</code>":"<b>付费条件</b>";
+      const b=await loadBilling();
+      const enabled=(b && b.enabled);
+      const billingHtml = enabled
+        ? `<button class="btn-line btn-sm" onclick="openCheckout()">💳 前往订阅</button>`
+        : `<button class="btn-line btn-sm" disabled title="在线订阅未开启">💳 前往订阅（未开启）</button> <span class="mini">在线订阅未开启</span>`;
+      document.getElementById("screenResult").innerHTML=
+        `<div class="paywall">🔒 此筛选含 ${key}，请激活授权码或使用在线订阅解锁后重试：
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div class="field" style="flex:1;min-width:200px"><label>离线激活码</label><input id="payLic" placeholder="ZOE-PREMIUM-xxxx"></div>
+            <button class="btn-line btn-sm" onclick="activateLicense(document.getElementById('payLic').value)">激活</button>
+            ${billingHtml}
+          </div>
+          <div class="mini" style="margin-top:6px">订阅 / 账户页可查看完整订阅状态与到期日。</div>
+        </div>`;
+      return;
+    }
+    if(!res.ok){ toast("筛选失败："+(data&&data.error||res.status)); return; }
+    renderScreenResults(data.results||[]);
+  }catch(e){ /* 401/403 已由 api 处理 */ }
+}
+function renderScreenResults(rows){
+  const el=document.getElementById("screenResult");
+  if(!rows.length){ el.innerHTML=`<div class="empty">未命中任何股票。</div>`; return; }
+  window.__rowCache=[];
+  let h=`<div class="mini">共命中 ${rows.length} 只</div><table><thead><tr><th>代码</th><th>名称</th><th>行业</th><th>评分</th><th>评级</th><th>风险</th><th></th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    window.__rowCache.push(r);
+    const idx=window.__rowCache.length-1;
+    const risk=(r.risk_flags&&r.risk_flags!=="无")?`<span class="risk">${esc(r.risk_flags)}</span>`:`<span class="risk ok">无</span>`;
+    h+=`<tr><td><code>${esc(r.code||"-")}</code></td><td>${esc(r.name||"-")}</td><td>${esc(r.industry||"-")}</td>
+      <td><span class="badge ${badgeClass(r.rating||"")}">${(r.total_score!=null?r.total_score:0).toFixed(1)}</span></td>
+      <td>${esc(r.rating||"-")}</td><td>${risk}</td>
+      <td><button class="btn-line btn-sm" onclick="showRowDetail(${idx})">详情</button></td></tr>`;
+  });
+  h+=`</tbody></table>`;
+  el.innerHTML=h;
+}
+function showRowDetail(idx){
+  const r=window.__rowCache[idx]; if(!r) return;
+  document.getElementById("detailTitle").textContent=`${r.name||""}（${r.code||""}）`;
+  let h=`<dl>`;
+  Object.keys(r).forEach(k=>{ let v=r[k]; if(v===undefined||v==="")v="—";
+    if(k==="risk_flags"&&v!=="无") v=`<span class="risk">${esc(v)}</span>`;
+    h+=`<dt>${esc(k)}</dt><dd>${typeof v==="object"?esc(JSON.stringify(v)):esc(v)}</dd>`; });
+  h+=`</dl>`;
+  document.getElementById("detailBody").innerHTML=h;
+  document.getElementById("detailModal").classList.add("open");
+}
+async function loadVersions(id){
+  const {res,data}=await api("GET","/api/schemes/"+id+"/versions");
+  const el=document.getElementById("versionList");
+  if(!res.ok){ el.innerHTML=`<div class="mini">版本加载失败</div>`; return; }
+  if(!data.length){ el.innerHTML=`<div class="mini">暂无版本快照。</div>`; return; }
+  el.innerHTML=data.map(v=>`<div class="vrow">
+    <b>v${esc(v.version_no)}</b> <span class="mini">${esc(v.created_at||"")}</span>
+    <span class="mini">${esc(v.created_by||"")}</span>
+    <span class="mini">${esc(v.note||"")}</span>
+    <span class="spacer" style="flex:1"></span>
+    ${canEdit()?`<button class="btn-line btn-sm" onclick="rollbackVersion(${v.id})">↩ 回滚</button>`:""}
+  </div>`).join("");
+}
+async function rollbackVersion(vid){
+  if(!state.currentScheme||!state.currentScheme.id) return;
+  if(!canEdit()){ toast("无权限"); return; }
+  if(!confirm("确认回滚到该版本？")) return;
+  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/rollback",{version_id:vid});
+  if(res.ok){ toast("已回滚"); await openScheme(state.currentScheme.id); } else toast("回滚失败："+(data&&data.error||res.status));
+}
+async function exportScheme(){
+  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
+  if(!canEdit()){ toast("无权限"); return; }
+  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/export");
+  if(res.ok){ toast("已导出并提交 git："+(data.git||"")); } else toast("导出失败："+(data&&data.error||res.status));
+}
+async function pullScheme(){
+  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
+  if(!canEdit()){ toast("无权限"); return; }
+  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/pull");
+  if(res.ok){ toast("已拉取："+String(data.output||"").slice(0,80)); await openScheme(state.currentScheme.id); }
+  else toast("拉取失败："+(data&&data.error||res.status));
+}
+async function loadOpLogs(){
+  const el=document.getElementById("opLogList");
+  try{
+    const {res,data}=await api("GET","/api/operation-logs");
+    if(!res.ok){ el.innerHTML=`<div class="mini">日志加载失败</div>`; return; }
+    if(!data.length){ el.innerHTML=`<div class="mini">暂无操作日志。</div>`; return; }
+    let h=`<table class="logtbl"><thead><tr><th>时间</th><th>用户</th><th>动作</th><th>对象</th><th>详情</th></tr></thead><tbody>`;
+    data.slice(0,100).forEach(l=>{
+      h+=`<tr><td>${esc(l.created_at||"")}</td><td>${esc(l.user_id||"")}</td><td>${esc(l.action||"")}</td>
+        <td>${esc((l.target_type||"")+"#"+(l.target_id||""))}</td><td class="mini">${esc(l.detail||"")}</td></tr>`;
+    });
+    h+=`</tbody></table>`;
+    el.innerHTML=h;
+  }catch(e){}
+}
+// 用户管理（admin/owner 可见）
+async function loadUsers(){
+  const el=document.getElementById("userTableBody"); if(!el) return;
+  const {res,data}=await api("GET","/api/users");
+  if(!res.ok){ el.innerHTML=`<tr><td colspan="4">加载失败</td></tr>`; return; }
+  el.innerHTML=data.map(u=>`<tr>
+    <td>${esc(u.display_name||u.username)}<br><span class="mini">${esc(u.username)}</span></td>
+    <td>${roleLabel(u.role)}</td>
+    <td>${esc(u.sub_tier||"-")}</td>
+    <td>${canOwner()?`<select data-uid="${u.id}" onchange="changeRole(${u.id},this.value)">${["viewer","editor","admin","owner"].map(r=>`<option ${u.role===r?"selected":""}>${r}</option>`).join("")}</select>`:roleLabel(u.role)}</td>
+  </tr>`).join("");
+}
+function renderUserMgmt(){
+  const card=document.getElementById("userMgmt");
+  if(!canAdmin()){ card.style.display="none"; return; }
+  card.style.display="block";
+  if(!document.getElementById("userTableBody")){
+    card.innerHTML=`<h3>👥 用户管理</h3>
+      <div class="inline-form">
+        <div class="field"><label>新用户名</label><input id="nuUser" placeholder="username"></div>
+        <div class="field"><label>密码</label><input id="nuPass" type="password" placeholder="password"></div>
+        <div class="field"><label>显示名</label><input id="nuName" placeholder="显示名"></div>
+        <div class="field"><label>角色</label><select id="nuRole"><option>viewer</option><option>editor</option><option>admin</option><option>owner</option></select></div>
+        <button class="btn-primary btn-sm" id="nuAdd">＋ 新建用户</button>
+      </div>
+      <table class="logtbl"><thead><tr><th>用户</th><th>角色</th><th>套餐</th><th>操作</th></tr></thead><tbody id="userTableBody"></tbody></table>`;
+    document.getElementById("nuAdd").onclick=addUser;
+  }
+  loadUsers();
+}
+async function addUser(){
+  if(!canAdmin()){ toast("无权限"); return; }
+  const username=document.getElementById("nuUser").value.trim();
+  const password=document.getElementById("nuPass").value;
+  const display_name=document.getElementById("nuName").value.trim();
+  const role=document.getElementById("nuRole").value;
+  if(!username||!password){ toast("请填写用户名和密码"); return; }
+  const {res,data}=await api("POST","/api/users",{username,password,display_name,role});
+  if(res.ok){ toast("已新建用户"); document.getElementById("nuUser").value=""; document.getElementById("nuPass").value=""; document.getElementById("nuName").value=""; loadUsers(); }
+  else toast("新建失败："+(data&&data.error||res.status));
+}
+async function changeRole(id,role){
+  if(!canOwner()){ toast("仅拥有者可修改他人角色"); await loadUsers(); return; }
+  const {res,data}=await api("PUT","/api/users/"+id,{role});
+  if(res.ok){ toast("已更新角色"); } else { toast("更新失败："+(data&&data.error||res.status)); await loadUsers(); }
+}
+function renderEditorButtons(){
+  const editable=canEdit();
+  ["btnSaveScheme","btnSnapScheme","btnPinScheme","btnDelScheme","btnExportScheme","btnPullScheme","btnNewScheme"].forEach(id=>{
+    const b=document.getElementById(id); if(b) b.disabled=!editable;
+  });
+  const applyB=document.getElementById("btnApplyScheme"); if(applyB) applyB.disabled=!isLoggedIn();
+}
+
 // ---------- 绑定 ----------
 document.getElementById("btnAdd").onclick=openAdd;
 document.getElementById("btnRescore").onclick=rescoreAll;
@@ -593,6 +1278,24 @@ document.getElementById("btnAddAlert").onclick=addAlert;
 document.getElementById("btnSavePort").onclick=savePortfolio;
 document.getElementById("btnRefreshReview").onclick=loadReview;
 document.querySelectorAll("[data-ptype]").forEach(b=>b.onclick=()=>loadPortfolio(b.dataset.ptype));
+
+// 新增模块绑定
+document.getElementById("btnNewScheme").onclick=newScheme;
+document.getElementById("btnSaveScheme").onclick=saveScheme;
+document.getElementById("btnSnapScheme").onclick=snapshotScheme;
+document.getElementById("btnApplyScheme").onclick=applyScheme;
+document.getElementById("btnPinScheme").onclick=()=>pinScheme(!(state.currentScheme&&state.currentScheme.is_pinned));
+document.getElementById("btnDelScheme").onclick=deleteScheme;
+document.getElementById("btnExportScheme").onclick=exportScheme;
+document.getElementById("btnPullScheme").onclick=pullScheme;
+document.getElementById("catSearch").oninput=renderCatalog;
+document.getElementById("loginClose").onclick=closeLogin;
+document.getElementById("loginBtn").onclick=doLogin;
+document.getElementById("licBtn").onclick=activateLicense;
+document.getElementById("btnAccActivate").onclick=activateFromAccount;
+
+renderUserBox();
+restoreSession();
 
 load();
 </script>

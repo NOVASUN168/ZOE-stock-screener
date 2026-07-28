@@ -20,6 +20,7 @@ import sys
 import db
 import auth
 import licenses
+import billing
 import filter_catalog
 import screen_engine
 
@@ -354,6 +355,16 @@ def dispatch(conn, method, path, body, handler):
         return license_activate(conn, user, body)
     if method == "GET" and path == "/api/license/status":
         return 200, licenses.get_status(conn, user["id"])
+
+    # ---- 计费 / Stripe 订阅（付费墙） ----
+    # 注意：/api/billing/webhook 因需原始字节验签，在 server.py do_POST 中提前拦截处理，
+    #       不在此 dispatch（避免被 self._body() 的 JSON 解析消费掉原始 body）。
+    if method == "POST" and path == "/api/billing/checkout":
+        plan = (body.get("plan") if isinstance(body, dict) else None) or "premium_monthly"
+        # 未配置或出错统一返回 200 + ok:False，让前端优雅降级
+        return 200, billing.create_checkout(conn, user["id"], plan)
+    if method == "GET" and path == "/api/billing/status":
+        return 200, billing.get_status(conn, user["id"])
     if method == "GET" and path == "/api/schemes":
         return schemes_list(conn, user)
     if method == "POST" and path == "/api/schemes":

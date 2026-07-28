@@ -17,14 +17,18 @@ import alerts
 import portfolio
 import review
 import filters_api
+import billing
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UI_PATH = os.path.join(HERE, "ui", "index.html")
 
 # V2.1 新增 API 前缀（这些路径交由 filters_api.dispatch 处理）
+# 注意：/api/billing/ 下的 checkout / status 走 dispatch；
+#       /api/billing/webhook 因需原始字节验签，在 do_POST 中单独提前拦截（见下）。
 NEW_API_PREFIXES = (
     "/api/auth/", "/api/license/", "/api/filter-catalog",
     "/api/schemes", "/api/screen", "/api/operation-logs", "/api/users",
+    "/api/billing/",
 )
 
 
@@ -138,6 +142,18 @@ class Handler(BaseHTTPRequestHandler):
         path = u.path
         conn = db.connect(self.server.db_path)
         try:
+            # ---------- 计费 Webhook（需原始字节验签，提前拦截，不经 dispatch 的 JSON body 解析） ----------
+            # 说明：filters_api.dispatch 内部通过 self._body() 把 rfile 读成 dict，会消费掉原始 body，
+            # 而 Stripe 验签必须用「原样字节」。因此这里在 dispatch 之前直接读取原始字节并调用 billing.handle_webhook。
+            if path == "/api/billing/webhook":
+                n = int(self.headers.get("Content-Length", 0) or 0)
+                raw = self.rfile.read(n) if n else b""
+                sig = self.headers.get("Stripe-Signature", "")
+                obj = billing.handle_webhook(conn, raw, sig)
+                self._send(200, obj)
+                return
+            # --------------------------------
+
             # ---------- V2.1 新增路由 ----------
             if path.startswith(NEW_API_PREFIXES):
                 code, obj = filters_api.dispatch(conn, "POST", path, self._body(), self)
