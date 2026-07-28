@@ -16,9 +16,16 @@ import scoring
 import alerts
 import portfolio
 import review
+import filters_api
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UI_PATH = os.path.join(HERE, "ui", "index.html")
+
+# V2.1 新增 API 前缀（这些路径交由 filters_api.dispatch 处理）
+NEW_API_PREFIXES = (
+    "/api/auth/", "/api/license/", "/api/filter-catalog",
+    "/api/schemes", "/api/screen", "/api/operation-logs", "/api/users",
+)
 
 
 def _rescore_and_persist(conn, row_id=None, data=None):
@@ -63,6 +70,12 @@ class Handler(BaseHTTPRequestHandler):
         q = parse_qs(u.query)
         conn = db.connect(self.server.db_path)
         try:
+            # ---------- V2.1 新增路由 ----------
+            if path.startswith(NEW_API_PREFIXES):
+                code, obj = filters_api.dispatch(conn, "GET", path, {}, self)
+                self._send(code, obj)
+                return
+            # --------------------------------
             if path == "/" or path == "/index.html":
                 if os.path.exists(UI_PATH):
                     with open(UI_PATH, "rb") as f:
@@ -125,6 +138,12 @@ class Handler(BaseHTTPRequestHandler):
         path = u.path
         conn = db.connect(self.server.db_path)
         try:
+            # ---------- V2.1 新增路由 ----------
+            if path.startswith(NEW_API_PREFIXES):
+                code, obj = filters_api.dispatch(conn, "POST", path, self._body(), self)
+                self._send(code, obj)
+                return
+            # --------------------------------
             if path == "/api/stocks":
                 data = self._body()
                 sid = db.create(conn, data)
@@ -185,6 +204,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         u = urlparse(self.path)
         path = u.path
+        if path.startswith(NEW_API_PREFIXES):
+            conn = db.connect(self.server.db_path)
+            try:
+                code, obj = filters_api.dispatch(conn, "PUT", path, self._body(), self)
+                self._send(code, obj)
+            finally:
+                conn.close()
+            return
         if path.startswith("/api/stocks/"):
             conn = db.connect(self.server.db_path)
             try:
@@ -201,6 +228,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         u = urlparse(self.path)
         path = u.path
+        if path.startswith(NEW_API_PREFIXES):
+            conn = db.connect(self.server.db_path)
+            try:
+                code, obj = filters_api.dispatch(conn, "DELETE", path, self._body(), self)
+                self._send(code, obj)
+            finally:
+                conn.close()
+            return
         if path.startswith("/api/stocks/"):
             conn = db.connect(self.server.db_path)
             try:

@@ -1,0 +1,53 @@
+{
+  "id": 1,
+  "name": "AI核心·低风险",
+  "owner_id": 1,
+  "is_pinned": 1,
+  "is_shared": 1,
+  "description": "示例：AI核心基础分类 + 排除ST + 排除游资主导",
+  "created_at": "2026-07-28 16:00:17",
+  "updated_at": "2026-07-28 16:00:17",
+  "conditions": [
+    {
+      "id": 1,
+      "scheme_id": 1,
+      "catalog_key": "ai_category",
+      "operator": "eq",
+      "value": "核心基础",
+      "value2": null,
+      "sort_order": 1,
+      "enabled": 1
+    },
+    {
+      "id": 2,
+      "scheme_id": 1,
+      "catalog_key": "st_exclude",
+      "operator": "eq",
+      "value": "0",
+      "value2": null,
+      "sort_order": 2,
+      "enabled": 1
+    },
+    {
+      "id": 3,
+      "scheme_id": 1,
+      "catalog_key": "hotmoney_exclude",
+      "operator": "eq",
+      "value": "0",
+      "value2": null,
+      "sort_order": 3,
+      "enabled": 1
+    },
+    {
+      "id": 4,
+      "scheme_id": 1,
+      "catalog_key": "pe",
+      "operator": "lt",
+      "value": "200",
+      "value2": null,
+      "sort_order": 4,
+      "enabled": 1
+    }
+  ],
+  "owner_username": "nova"
+}

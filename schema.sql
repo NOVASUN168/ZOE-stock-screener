@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS stocks (
     institution_change TEXT,    -- 机构动向（长期机构信号）
     main_force_trend TEXT,      -- 主力长期趋势：流入/流出/持平（由20日主力净流入判定）
 
+    -- 资金流/游资（V2.1 新增：20日主力净流入、游资参与度，供数据驱动筛选）
+    main_inflow_20d REAL,      -- 20日主力资金净流入（万元，可负）
+    main_outflow_20d REAL,     -- 20日主力资金净流出（万元）
+    net_capital_flow REAL,     -- 净流入合计 = inflow - outflow（万元，可负；资金流入/流出核心指标）
+    hotmoney_ratio REAL,        -- 游资参与度占比（%，0-100）
+    hotmoney_flag INTEGER DEFAULT 0, -- 1=游资主导（需排除）
+
     -- 范围与 AI 分类（V2.0 新增）
     market TEXT,                -- A股 / 港股 / A+H
     board TEXT,                 -- 主板/创业板/科创板/北交所/H股/红筹/民营港股
@@ -139,3 +146,87 @@ CREATE TABLE IF NOT EXISTS system_config (
 CREATE INDEX IF NOT EXISTS idx_stocks_score ON stocks(total_score);
 CREATE INDEX IF NOT EXISTS idx_alerts_stock ON alerts(stock_id);
 CREATE INDEX IF NOT EXISTS idx_watch_stock ON watchlist(stock_id);
+
+-- =====================================================================
+-- V2.1 新增：协作 / 授权 / 数据驱动筛选
+-- =====================================================================
+
+-- ---------- 用户 / 授权 ----------
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT,          -- hashlib 加盐 sha256（salt$hash）
+    display_name TEXT,
+    role TEXT DEFAULT 'viewer',  -- owner / admin / editor / viewer
+    status TEXT DEFAULT 'active',-- active / disabled
+    license_key TEXT,            -- 授权码（云端校验写入）
+    sub_tier TEXT DEFAULT 'free',-- free / pro / team ...
+    sub_expiry TEXT,             -- 订阅到期日 ISO（YYYY-MM-DD）
+    created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
+-- ---------- 筛选条件目录（单一事实来源，绑定 stocks 列或 computed: 字段） ----------
+CREATE TABLE IF NOT EXISTS filter_catalog (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT UNIQUE NOT NULL,    -- 条件键（如 roe / net_capital_flow）
+    name TEXT,                   -- 中文名
+    grp TEXT,                    -- 财务/估值/资金/技术/题材/风险
+    ftype TEXT,                  -- numeric / enum / bool / text
+    operator TEXT,               -- gt/lt/between/eq/in/neq/like（默认推荐算子）
+    unit TEXT,                   -- 单位（如 % / 万元 / 倍）
+    description TEXT,
+    is_premium INTEGER DEFAULT 0,-- 1=付费墙功能
+    default_visible INTEGER DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_filter_catalog_key ON filter_catalog(key);
+
+-- ---------- 筛选方案 ----------
+CREATE TABLE IF NOT EXISTS filter_schemes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    owner_id INTEGER,
+    is_pinned INTEGER DEFAULT 0, -- 1=置顶
+    is_shared INTEGER DEFAULT 1, -- 1=团队共享
+    description TEXT,
+    created_at TEXT,
+    updated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_filter_schemes_owner ON filter_schemes(owner_id);
+
+-- ---------- 方案条件 ----------
+CREATE TABLE IF NOT EXISTS scheme_conditions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scheme_id INTEGER,
+    catalog_key TEXT,            -- 关联 filter_catalog.key
+    operator TEXT,               -- 实际算子（可覆盖目录默认）
+    value TEXT,                  -- 主值（数字/枚举/文本；enum-in 用 JSON 数组）
+    value2 TEXT,                 -- between 的第二区间值
+    sort_order INTEGER DEFAULT 0,
+    enabled INTEGER DEFAULT 1    -- 0=临时禁用（不参与过滤）
+);
+CREATE INDEX IF NOT EXISTS idx_scheme_conditions_scheme ON scheme_conditions(scheme_id);
+
+-- ---------- 方案版本（版本化 + 回滚） ----------
+CREATE TABLE IF NOT EXISTS scheme_versions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scheme_id INTEGER,
+    version_no INTEGER,
+    snapshot_json TEXT,          -- 方案 + 条件快照（JSON）
+    created_by INTEGER,
+    created_at TEXT,
+    note TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_scheme_versions_scheme ON scheme_versions(scheme_id);
+
+-- ---------- 操作日志 ----------
+CREATE TABLE IF NOT EXISTS operation_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action TEXT,                 -- create/update/delete/login/pin/rollback ...
+    target_type TEXT,            -- user/scheme/condition/version/log
+    target_id INTEGER,
+    detail TEXT,
+    created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_operation_logs_user ON operation_logs(user_id);

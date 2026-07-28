@@ -21,6 +21,8 @@ sys.path.insert(0, HERE)
 
 import db
 import scoring
+import filter_catalog
+import screen_engine
 
 SCHEMA = os.path.join(ROOT, "schema.sql")
 DEFAULT_DB = os.path.join(ROOT, "data", "screener.db")
@@ -42,6 +44,7 @@ def build_schema(conn):
     # sqlite3 支持一次执行多条语句
     conn.executescript(sql)
     conn.commit()
+    db.migrate_stocks(conn)  # 向后兼容：补齐已存在 stocks 表的缺失列
 
 
 def seed(conn):
@@ -64,6 +67,49 @@ def init_config(conn):
             "INSERT OR IGNORE INTO system_config(key, value, updated_at) VALUES(?,?,datetime('now','localtime'))",
             (k, v))
     conn.commit()
+
+
+# ---------- V2.1：条件目录 / 默认用户 / 示例方案 播种 ----------
+# ⚠️ 开发默认密码（仅本地/演示用，生产请改）：
+#   nova  / owner   -> zoe2026
+#   robin / editor  -> robin2026
+#   sean  / editor  -> sean2026
+DEV_USERS = [
+    ("nova", "zoe2026", "Nova", "owner"),
+    ("robin", "robin2026", "Robin", "editor"),
+    ("sean", "sean2026", "Sean", "editor"),
+]
+
+def seed_catalog_and_users(conn):
+    n = filter_catalog.seed_catalog(conn)
+    print(f"  条件目录写入 {n} 条（共 {len(filter_catalog.CATALOG)} 条，已存在跳过）")
+
+    for username, pw, disp, role in DEV_USERS:
+        if db.get_user(conn, username):
+            continue
+        uid = db.create_user(conn, username, pw, display_name=disp, role=role)
+        db.log_operation(conn, uid, "create", "user", uid, f"开发默认账户 {username}/{role}")
+    print(f"  默认账户就绪：{', '.join(u[0] for u in DEV_USERS)}")
+
+    # 示例共享方案（置顶，含 3-4 个条件），方便前端演示。
+    # 注：真实种子 seed_real_v2.json 暂未填充资金流字段（net_capital_flow 等均为 NULL），
+    # 故示例方案选用 seed 已具备的 ai_category / 风险排除类条件，确保演示有结果；
+    # 资金流条件（net_capital_flow/hotmoney_*）待 fetch 脚本补全数据后即可生效。
+    if not db.list_schemes(conn):
+        nova = db.get_user(conn, "nova")
+        sid = db.create_scheme(
+            conn, "AI核心·低风险", owner_id=nova["id"],
+            description="示例：AI核心基础分类 + 排除ST + 排除游资主导",
+            is_pinned=1, is_shared=1)
+        db.add_condition(conn, sid, "ai_category", "eq", "核心基础", sort_order=1)
+        db.add_condition(conn, sid, "st_exclude", "eq", "0", sort_order=2)
+        db.add_condition(conn, sid, "hotmoney_exclude", "eq", "0", sort_order=3)
+        db.add_condition(conn, sid, "pe", "lt", "200", sort_order=4)
+        db.snapshot_version(conn, sid, nova["id"], note="初始示例版本")
+        db.log_operation(conn, nova["id"], "create", "scheme", sid, "示例共享方案")
+        print(f"  示例方案已播种（id={sid}，4 个条件）")
+    else:
+        print("  已有方案，跳过示例方案播种")
 
 
 def main():
@@ -95,6 +141,7 @@ def main():
 
     init_config(conn)
     print("  system_config 默认值已就绪")
+    seed_catalog_and_users(conn)
     print("完成。总行数：", conn.execute("SELECT COUNT(*) FROM stocks").fetchone()[0])
     conn.close()
 

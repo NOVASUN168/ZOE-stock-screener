@@ -111,6 +111,10 @@ def _capital(r):
     s += {"增持": 4, "持平": 2, "减持": 0}.get(nb, 2)
     ic = _txt(r.get("institution_change"))
     s += {"增仓": 3, "持平": 1.5, "减仓": 0}.get(ic, 1.5)
+    # V2.1：纳入 20日主力净流入合计（net_capital_flow）作为资金加分项
+    ncf = _num(r.get("net_capital_flow"))
+    if ncf is not None and ncf > 0:
+        s += 2  # 主力净流入为正，加 2 分（总分由 min(s,15) 封顶）
     return min(s, 15.0)
 
 # ---------- 风险 5 ----------
@@ -138,6 +142,7 @@ HARD_FILTERS = [
     ("major_holder_reduction", "大股东减持"),
     ("high_pledge", "高质押"),
     ("non_ai", "非AI驱动行业"),
+    ("hotmoney_flag", "游资主导"),  # V2.1：游资主导个股一票否决
 ]
 def _hard_excluded(r):
     hits = []
