@@ -80,6 +80,11 @@
   .risk-banner{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:10px;
     padding:10px 14px;margin-bottom:8px;font-size:13px}
   .risk-banner b{color:#991b1b}
+  /* ===== 全局合规风险声明（粗体醒目，全站可见） ===== */
+  .risk-disclaimer{background:#fff7ed;border:1.5px solid #fdba74;color:#9a3412;
+    padding:9px 24px;font-size:13px;font-weight:700;text-align:center;letter-spacing:.2px}
+  .risk-disclaimer b{color:#7c2d12;font-weight:800}
+  .risk-disclaimer .sep{opacity:.6;font-weight:400}
   .alert-row,.watch-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
   .trig{background:#fee2e2;color:var(--red);border:1px solid #fca5a5;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600}
   .idle{background:#f1f5f9;color:var(--muted);padding:2px 8px;border-radius:6px;font-size:12px}
@@ -146,6 +151,24 @@
   .cmp-legend span{display:flex;align-items:center;gap:6px}
   .cmp-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
   @media(max-width:1100px){.scheme-wrap{grid-template-columns:1fr}}
+  /* ===== 定价页 ===== */
+  .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch;margin-top:14px}
+  .plan{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 18px;
+    display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .plan-hot{border:2px solid var(--brand);box-shadow:0 8px 24px rgba(37,99,235,.15)}
+  .plan-ribbon{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;
+    font-size:12px;font-weight:700;padding:3px 14px;border-radius:20px;white-space:nowrap}
+  .plan-name{font-size:17px;font-weight:800;color:var(--brand2)}
+  .plan-price{font-size:20px;font-weight:800;margin:8px 0 2px}
+  .plan-period{font-size:12px;color:var(--muted);font-weight:500}
+  .plan-tag{font-size:12px;color:var(--amber);font-weight:600;margin-bottom:10px}
+  .plan-feat{list-style:none;padding:0;margin:6px 0 16px;flex:1}
+  .plan-feat li{font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line);color:var(--ink)}
+  .plan-feat li::before{content:"✓ ";color:var(--green);font-weight:700}
+  .plan-btn{width:100%;margin-top:auto}
+  .disclaimer{font-size:13px;color:var(--ink);line-height:1.7}
+  .disclaimer p{margin:0 0 10px}
+  @media(max-width:900px){.pricing-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -161,6 +184,11 @@
   <div class="userbox" id="userBox"></div>
 </header>
 
+<!-- ============ 全局合规风险声明（粗体，全站可见） ============ -->
+<div class="risk-disclaimer">
+  <b>投资研究工具 / 数据可视化</b>　<span class="sep">——</span>　只做筛选、数据、解读，<b>不荐股 · 不代操 · 不承诺收益</b>
+</div>
+
 <nav class="tabs">
   <button class="tab active" data-tab="work">📊 工作台</button>
   <button class="tab" data-tab="alert">🔔 预警·风控</button>
@@ -169,6 +197,7 @@
   <button class="tab" data-tab="gloss">📖 新手术语</button>
   <button class="tab" data-tab="scheme">🔧 筛选方案</button>
   <button class="tab" data-tab="account">💳 订阅 / 账户</button>
+  <button class="tab" data-tab="pricing">💰 价格 / 订阅</button>
 </nav>
 
 <!-- ============ 工作台 ============ -->
@@ -350,7 +379,7 @@
 <!-- ============ 订阅 / 账户 ============ -->
 <section id="panel-account">
   <div class="wrap">
-    <div class="note">💳 <b>订阅 / 账户</b>：订阅后可解锁全部高级筛选条件。也可使用离线激活码 <code>ZOE-PREMIUM-xxx</code> 解锁，两种途径效果一致。</div>
+    <div class="note">💳 <b>订阅 / 账户</b>：订阅后可解锁全部高级筛选条件。🎁 <b>新用户前 3 个月免费</b>试用全功能（Stripe 90 天试用期，期间不扣费）。也可使用离线激活码 <code>ZOE-PREMIUM-xxx</code> 解锁，两种途径效果一致。</div>
     <div class="card">
       <h3>当前订阅状态</h3>
       <div class="kv" id="billingStatus">
@@ -370,6 +399,77 @@
         <button class="btn-line" id="btnAccActivate">激活授权</button>
       </div>
       <div class="mini" style="margin-top:8px">说明：授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁全部高级筛选条件；订阅后亦可获得同等授权。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 价格 / 订阅 ============ -->
+<section id="panel-pricing">
+  <div class="wrap">
+    <div class="risk-disclaimer" style="margin-bottom:14px">
+      <b>投资研究工具 / 数据可视化</b>　<span class="sep">——</span>　只做筛选、数据、解读，<b>不荐股 · 不代操 · 不承诺收益</b>
+    </div>
+    <div class="card" style="text-align:center">
+      <h3 style="margin-bottom:6px">🎁 新用户前 3 个月免费，全功能畅用</h3>
+      <p id="trialLabel" style="margin:0;color:var(--muted);font-size:13px">订阅会员版 / 高阶版即享 90 天免费试用期（Stripe 自动设置），期间不扣费；试用结束后按所选档位自动续费，随时可在 Stripe 取消。</p>
+    </div>
+    <div class="pricing-grid" id="pricingGrid">
+      <!-- 免费版 -->
+      <div class="plan">
+        <div class="plan-name">免费版</div>
+        <div class="plan-price">¥0 <span class="plan-period">永久免费</span></div>
+        <div class="plan-tag">先体验，再决定</div>
+        <ul class="plan-feat">
+          <li>基础条件筛选（基本面 / 估值 / 成长 / 资金 / 风险）</li>
+          <li>每日限次查看五维雪花图</li>
+          <li>AI 产业聚焦基础视图</li>
+          <li>组合推荐（基于评分快照）</li>
+        </ul>
+        <button class="btn-line plan-btn" onclick="switchTab('work')">去体验 →</button>
+      </div>
+      <!-- 会员版 -->
+      <div class="plan plan-hot">
+        <div class="plan-ribbon">主推</div>
+        <div class="plan-name">会员版</div>
+        <div class="plan-price" id="planMemberPrice">¥19/月 或 ¥199/年</div>
+        <div class="plan-tag">个人投资者首选</div>
+        <ul class="plan-feat">
+          <li>无限查看五维雪花大图 + 多只对比</li>
+          <li>真实主力资金流 / 北向资金</li>
+          <li>AI 产业聚焦深度解读（护城河 / 长期逻辑）</li>
+          <li>价格 / 评分 / 风险 三维预警</li>
+          <li>多只组合叠加对比</li>
+          <li>优先体验新功能</li>
+        </ul>
+        <button class="btn-primary plan-btn" onclick="openCheckout('member_monthly')">💳 订阅会员版（前3月免费）</button>
+      </div>
+      <!-- 高阶版 -->
+      <div class="plan">
+        <div class="plan-name">高阶版</div>
+        <div class="plan-price" id="planProPrice">¥49/月 或 ¥499/年</div>
+        <div class="plan-tag">进阶研究 / 多市场</div>
+        <ul class="plan-feat">
+          <li>含会员版全部功能</li>
+          <li>策略回测（历史胜率 / 回撤）</li>
+          <li>多市场覆盖（A股 / 港股 / A+H）</li>
+          <li>数据导出 / API 接入</li>
+          <li>专属答疑</li>
+        </ul>
+        <button class="btn-primary plan-btn" onclick="openCheckout('pro_monthly')">💳 订阅高阶版（前3月免费）</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>📜 免责声明（务必阅读）</h3>
+      <div class="disclaimer" id="disclaimerBox">
+        <p><b>1. 产品定位。</b>ZOE 股票筛选器是一个<b>投资研究工具 / 数据可视化</b>平台，仅提供股票数据的<b>筛选、展示与解读</b>功能。我们<b>不提供个性化投资建议、不代客理财、不承诺任何收益</b>。</p>
+        <p><b>2. 非投资建议。</b>本平台所有评分、评级、五维雪花图、组合推荐、买点 / 卖点信号均为基于历史数据与既定模型的<b>客观计算与推断</b>，不构成任何证券买卖建议，也不构成对特定投资者的针对性意见。</p>
+        <p><b>3. 数据与延迟。</b>数据来源于公开行情接口，可能存在延迟、缺口或错误；实时性以行情源为准。因数据偏差导致的任何决策损失，本平台不承担责任。</p>
+        <p><b>4. 风险自担。</b>证券市场有风险，入市需谨慎。任何投资行为均由您本人独立决策并承担全部盈亏后果。过往表现不代表未来收益。</p>
+        <p><b>5. 无收益承诺。</b>本平台不保证、不暗示、不承诺任何收益率或保本。任何"稳赚""必涨"类表述均非本平台观点。</p>
+        <p><b>6. 责任限制。</b>在法律允许范围内，本平台对因使用（或无法使用）本服务导致的直接或间接损失不承担责任。如您所在地区对投资工具另有监管规定，请以当地法规为准。</p>
+        <p class="mini" style="margin-top:8px">完整版免责声明见 <code>docs/免责声明.html</code>。本声明随产品迭代可能更新，请以页面最新版本为准。</p>
+      </div>
     </div>
   </div>
 </section>
@@ -517,6 +617,7 @@ function switchTab(name){
   if(name==="review") loadReview();
   if(name==="scheme") loadSchemeTab();
   if(name==="account") loadAccountTab();
+  if(name==="pricing") loadPricingTab();
 }
 
 // ---------- 渲染表单 ----------
@@ -983,9 +1084,10 @@ async function loadBilling(){
   }catch(e){ /* 401/403 已由 api 处理 */ }
   return state.billing;
 }
-async function openCheckout(){
+async function openCheckout(plan){
   try{
-    const {res,data}=await api("POST","/api/billing/checkout",{plan:"premium_monthly"});
+    const p = plan || "premium_monthly";
+    const {res,data}=await api("POST","/api/billing/checkout",{plan:p});
     if(res.ok && data && data.ok && data.checkout_url){
       window.open(data.checkout_url, "_blank");
     } else if(data && data.error==="billing_not_configured"){
@@ -998,6 +1100,22 @@ async function openCheckout(){
 async function loadAccountTab(){
   const b=await loadBilling();
   renderBilling(b);
+}
+// 定价页：从 /api/pricing 拉取方案并刷新价格/试用文案（API 不可用时保持静态默认）
+async function loadPricingTab(){
+  try{
+    const {res,data}=await api("GET","/api/pricing");
+    if(!res.ok || !data) return;
+    if(data.trial_label){
+      const tl=document.getElementById("trialLabel");
+      if(tl) tl.textContent=data.trial_label;
+    }
+    const plans=(data.plans||[]);
+    const member=plans.find(p=>p.id==="member");
+    const pro=plans.find(p=>p.id==="pro");
+    if(member && member.price){ const m=document.getElementById("planMemberPrice"); if(m) m.textContent=member.price; }
+    if(pro && pro.price){ const p=document.getElementById("planProPrice"); if(p) p.textContent=pro.price; }
+  }catch(e){ /* 静默：用静态默认值 */ }
 }
 function renderBilling(b){
   const tierEl=document.getElementById("billingTier");

@@ -34,6 +34,72 @@ _STRIPE_API = "https://api.stripe.com/v1"
 _SUCCESS_URL = "http://127.0.0.1:8765/?sub=ok"
 _CANCEL_URL = "http://127.0.0.1:8765/?sub=cancel"
 
+# 统一产品定位（合规核心声明，前端多处引用）
+PRODUCT_POSITIONING = "投资研究工具 / 数据可视化——只做筛选、数据、解读，不荐股、不代操、不承诺收益"
+
+# --------------------------------------------------------------------------
+# 定价方案（前端定价页 / 订阅页数据来源）
+#   前期 3 个月免费试用，之后按档位收费（费率由运营方安排）。
+#   若 system_config 中存在 pricing_override（JSON 字符串）则以其为准，便于后续调价。
+# --------------------------------------------------------------------------
+_DEFAULT_PRICING = {
+    "currency": "CNY",
+    "trial_days": 90,
+    "trial_label": "新用户前 3 个月免费试用全功能（Stripe 90 天试用期，到期后再按档位收费）",
+    "positioning": PRODUCT_POSITIONING,
+    "plans": [
+        {
+            "id": "free", "name": "免费版", "price": "¥0", "period": "永久免费",
+            "tagline": "先体验，再决定", "features": [
+                "基础条件筛选（基本面 / 估值 / 成长 / 资金 / 风险）",
+                "每日限次查看五维雪花图",
+                "AI 产业聚焦基础视图",
+                "组合推荐（基于评分快照）",
+            ],
+        },
+        {
+            "id": "member", "name": "会员版", "price": "¥19/月 或 ¥199/年",
+            "period": "月付 / 年付", "highlight": True,
+            "tagline": "主推 · 个人投资者首选",
+            "features": [
+                "无限查看五维雪花大图 + 多只对比",
+                "真实主力资金流 / 北向资金",
+                "AI 产业聚焦深度解读（护城河 / 长期逻辑）",
+                "价格 / 评分 / 风险 三维预警",
+                "多只组合叠加对比",
+                "优先体验新功能",
+            ],
+        },
+        {
+            "id": "pro", "name": "高阶版", "price": "¥49/月 或 ¥499/年",
+            "period": "月付 / 年付",
+            "tagline": "进阶研究 / 多市场",
+            "features": [
+                "含会员版全部功能",
+                "策略回测（历史胜率 / 回撤）",
+                "多市场覆盖（A股 / 港股 / A+H）",
+                "数据导出 / API 接入",
+                "专属答疑",
+            ],
+        },
+    ],
+}
+
+
+def get_pricing(conn=None) -> dict:
+    """返回定价方案。若 system_config 有 pricing_override（JSON）则合并覆盖。"""
+    pricing = dict(_DEFAULT_PRICING)
+    if conn is not None:
+        try:
+            row = conn.execute(
+                "SELECT value FROM system_config WHERE key='pricing_override'").fetchone()
+            if row and row["value"]:
+                override = json.loads(row["value"])
+                pricing.update({k: v for k, v in override.items() if k in pricing})
+        except Exception:
+            pass
+    return pricing
+
 
 def _plus_years(n: int) -> str:
     return (datetime.date.today() + datetime.timedelta(days=365 * n)).isoformat()
@@ -66,7 +132,7 @@ def _cfg(conn) -> dict:
 # --------------------------------------------------------------------------
 # 创建 Checkout 会话
 # --------------------------------------------------------------------------
-def create_checkout(conn, user_id, plan="premium_monthly") -> dict:
+def create_checkout(conn, user_id, plan="premium_monthly", trial_days=90) -> dict:
     """创建 Stripe Checkout 会话，返回可跳转的 checkout_url。
 
     未配置密钥 → {"ok": False, "error": "billing_not_configured"}
@@ -89,6 +155,9 @@ def create_checkout(conn, user_id, plan="premium_monthly") -> dict:
         "cancel_url": _CANCEL_URL,
         "client_reference_id": str(user_id),
     }
+    # 新用户前 3 个月免费：订阅模式下设置 Stripe 试用期（仅对循环订阅价格生效）
+    if mode == "subscription" and trial_days:
+        params["subscription_data[trial_period_days]"] = str(trial_days)
     # Basic Auth：username = secret, password 留空（标准库方式）
     basic = base64.b64encode(f"{secret}:".encode("utf-8")).decode("ascii")
     req = urllib.request.Request(

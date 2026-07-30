@@ -136,6 +136,10 @@ class Handler(BaseHTTPRequestHandler):
                 rows = conn.execute("SELECT key,value FROM system_config").fetchall()
                 self._send(200, {r["key"]: r["value"] for r in rows})
                 return
+            # ---------- 定价方案（前端定价页数据来源） ----------
+            if path == "/api/pricing":
+                self._send(200, billing.get_pricing(conn))
+                return
             self._send(404, {"error": "未知路径"})
         finally:
             conn.close()
