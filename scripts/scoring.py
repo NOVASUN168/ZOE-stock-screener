@@ -273,12 +273,45 @@ def _advantages(r):
     return "、".join(adv) if adv else "—"
 
 
+# ---------- 五维雪花图（借鉴 Simply Wall St Snowflake：一张图看懂一只股票） ----------
+def _dim_level(pct):
+    """0-100 → 大白话等级"""
+    if pct >= 80: return "优秀"
+    if pct >= 60: return "良好"
+    if pct >= 40: return "一般"
+    return "偏弱"
+
+_DIM_LABELS = [
+    ("dim_fundamental", "基本面"),
+    ("dim_valuation", "估值"),
+    ("dim_growth", "成长"),
+    ("dim_capital", "资金"),
+    ("dim_safety", "安全"),
+]
+
+def _snowflake(f, v, g, c, rk):
+    """把 5 个原始子分归一化为 0-100，供雪花图与维度条使用。
+    注意：风险维度 rk 满分5 = 无风险，归一化后直接命名为「安全」，越高越安全。"""
+    dims = {
+        "dim_fundamental": round(f / 35 * 100),
+        "dim_valuation": round(v / 20 * 100),
+        "dim_growth": round(g / 25 * 100),
+        "dim_capital": round(c / 15 * 100),
+        "dim_safety": round(rk / 5 * 100),
+    }
+    # 大白话一句总结（学 Simply Wall St：小白 3 秒看懂）
+    parts = ["{}{}".format(label, _dim_level(dims[key])) for key, label in _DIM_LABELS]
+    dims["dim_summary"] = " · ".join(parts)
+    return dims
+
+
 # ---------- 主入口 ----------
 def score_stock(row: dict) -> dict:
     row = dict(row)
     f = _fundamental(row); v = _valuation(row); g = _growth(row)
     c = _capital(row); rk = _risk(row)
     total = round(f + v + g + c + rk, 1)
+    row.update(_snowflake(f, v, g, c, rk))
 
     hard = _hard_excluded(row)
     soft = _soft_risks(row)

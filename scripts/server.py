@@ -107,6 +107,9 @@ class Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/stocks/"):
                 sid = int(path.rsplit("/", 1)[-1])
                 row = db.get(conn, sid)
+                # 实时评分：让详情弹窗拿到五维雪花图数据（dim_* 字段）
+                if row:
+                    row = scoring.score_stock(row)
                 self._send(200, row if row else {"error": "未找到"})
                 return
             # ---------- 预警 / 风控提醒 ----------

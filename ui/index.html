@@ -130,6 +130,21 @@
   .paywall code{background:#fef3c7}
   .vrow{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
   .logtbl td,.logtbl th{font-size:12px}
+  /* ===== V2.3 五维雪花图（借鉴 Simply Wall St Snowflake） ===== */
+  .snowwrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
+    background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:16px}
+  .dimbars{flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px}
+  .dimrow{display:flex;align-items:center;gap:10px;font-size:12px}
+  .dimrow .dl{width:44px;color:var(--muted);text-align:right}
+  .dimrow .track{flex:1;height:8px;background:#e5e7eb;border-radius:6px;overflow:hidden}
+  .dimrow .fill{height:100%;border-radius:6px;transition:.3s}
+  .dimrow .dv{width:70px;font-weight:600}
+  .snow-summary{background:var(--blue);border:1px solid #bfdbfe;color:var(--brand2);
+    border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px}
+  .minisnow{cursor:pointer;vertical-align:middle}
+  .cmp-legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px}
+  .cmp-legend span{display:flex;align-items:center;gap:6px}
+  .cmp-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
   @media(max-width:1100px){.scheme-wrap{grid-template-columns:1fr}}
 </style>
 </head>
@@ -187,13 +202,15 @@
     <label>最低分 <input id="fMin" type="number" style="width:80px" placeholder="0"></label>
     <button class="btn-line" id="btnFilter">筛选</button>
     <button class="btn-line" id="btnReset">重置</button>
+    <button class="btn-line" id="btnCompare" title="勾选 2-3 只股票后点击，叠加对比五维雪花图">⚖ 雪花对比</button>
     <span id="count" style="color:var(--muted);font-size:12px"></span>
   </div>
   <div class="wrap">
     <table id="tbl">
       <thead><tr>
+        <th title="勾选 2-3 只，点上方「雪花对比」">⚖</th>
         <th>代码</th><th>名称</th><th>行业</th><th>市场</th><th>AI分类</th><th>现价</th>
-        <th>综合评分</th><th>评级</th><th>风险标记</th><th>操作</th>
+        <th>综合评分</th><th>五维雪花</th><th>评级</th><th>风险标记</th><th>操作</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -258,6 +275,7 @@
     <div class="card">
       <h3>📖 新手术语速查（小白必看）</h3>
       <dl class="gloss">
+        <dt>五维雪花图（V2.3 新增）</dt><dd>把一只股票的 基本面/估值/成长/资金/安全 五个维度画成一朵"雪花"（借鉴国际知名产品 Simply Wall St）。<b>雪花越大越圆润 = 五维越均衡越优秀</b>；某个角凹进去 = 该维度偏弱。绿色=优秀、蓝色=良好、琥珀=一般、红色=偏弱。列表页每行有迷你雪花，点击可看大图；勾选 2-3 只可叠加对比。</dd>
         <dt>ROE（净资产收益率）</dt><dd>公司用股东的钱赚钱的能力。>15% 算优秀，越高越好。</dd>
         <dt>ROA（总资产收益率）</dt><dd>用全部资产赚钱的能力。>8% 较健康。</dd>
         <dt>PE（市盈率）</dt><dd>股价 ÷ 每股盈利。低于行业均值通常更便宜，但过低可能隐含风险。</dd>
@@ -394,6 +412,17 @@
   </div>
 </div>
 
+<!-- 雪花对比 弹窗 -->
+<div class="modal" id="compareModal">
+  <div class="sheet" style="width:min(720px,100%)">
+    <div class="sheet-head">
+      <h2>⚖ 五维雪花对比</h2><div class="spacer"></div>
+      <button class="btn-line btn-sm" id="compareClose">关闭</button>
+    </div>
+    <div class="sheet-body" id="compareBody"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -405,7 +434,7 @@ const GROUPS = [
     {k:"industry",l:"行业",t:"text",ph:"消费/白酒"},
     {k:"price",l:"当前价格",t:"number",ph:"1500"},
   ]},
-  {g:"基本面(30%)", items:[
+  {g:"基本面(35%)", items:[
     {k:"roe",l:"ROE(%)",t:"number",ph:">15"},
     {k:"roa",l:"ROA(%)",t:"number",ph:">8"},
     {k:"rev_growth_years",l:"营收连续增长年数",t:"number",ph:"0-3"},
@@ -422,7 +451,7 @@ const GROUPS = [
     {k:"ev_ebitda",l:"EV/EBITDA",t:"number",ph:"<=15"},
     {k:"safety_margin",l:"安全边际(%)",t:"number",ph:">30"},
   ]},
-  {g:"成长(20%)", items:[
+  {g:"成长(25%)", items:[
     {k:"rd_increase",l:"研发投入持续增加",t:"chk"},
     {k:"mkt_share_growth",l:"市场份额增长",t:"chk"},
     {k:"industry_space",l:"行业空间",t:"sel",opts:["大","中","小"]},
@@ -529,6 +558,103 @@ function collectForm(){
   return d;
 }
 
+// ---------- V2.3 五维雪花图（借鉴 Simply Wall St Snowflake） ----------
+const DIMS=[
+  {k:"dim_fundamental",l:"基本面"},
+  {k:"dim_valuation",l:"估值"},
+  {k:"dim_growth",l:"成长"},
+  {k:"dim_capital",l:"资金"},
+  {k:"dim_safety",l:"安全"},
+];
+let SNOW_CACHE={};   // id -> row（含 dim_* 字段），供迷你图/对比使用
+function snowColor(score){
+  if(score>=80)return"#16a34a";      // 优：绿（与评级徽章一致）
+  if(score>=65)return"#0ea5e9";      // 良：蓝
+  if(score>=50)return"#d97706";      // 中：琥珀
+  return"#dc2626";                    // 弱：红
+}
+function snowPoints(row,cx,cy,r){
+  // 5 个维度从正上方开始顺时针，值 0-100 映射到半径
+  return DIMS.map((d,i)=>{
+    const pct=Math.max(0,Math.min(100,Number(row[d.k])||0));
+    const ang=-Math.PI/2+i*2*Math.PI/5;
+    const rr=r*(0.08+0.92*pct/100);
+    return [cx+rr*Math.cos(ang), cy+rr*Math.sin(ang)];
+  });
+}
+function gridPentagon(cx,cy,r){
+  const pts=DIMS.map((d,i)=>{
+    const ang=-Math.PI/2+i*2*Math.PI/5;
+    return `${cx+r*Math.cos(ang)},${cy+r*Math.sin(ang)}`;
+  }).join(" ");
+  return `<polygon points="${pts}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
+}
+function snowflakeSVG(row,size,withLabels){
+  const pad=withLabels?30:2;
+  const cx=size/2,cy=size/2,r=size/2-pad;
+  const color=snowColor(Number(row.total_score)||0);
+  let h=`<svg class="${withLabels?"":"minisnow"}" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
+  [1,0.66,0.33].forEach(f=>{h+=gridPentagon(cx,cy,r*f);});
+  DIMS.forEach((d,i)=>{
+    const ang=-Math.PI/2+i*2*Math.PI/5;
+    h+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(ang)}" y2="${cy+r*Math.sin(ang)}" stroke="#e5e7eb" stroke-width="1"/>`;
+    if(withLabels){
+      const lx=cx+(r+16)*Math.cos(ang), ly=cy+(r+16)*Math.sin(ang);
+      h+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#6b7280">${d.l}</text>`;
+    }
+  });
+  const pts=snowPoints(row,cx,cy,r).map(p=>p.join(",")).join(" ");
+  h+=`<polygon points="${pts}" fill="${color}" fill-opacity="0.28" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
+  if(withLabels){
+    snowPoints(row,cx,cy,r).forEach(p=>{h+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${color}"/>`;});
+  }
+  h+=`</svg>`;
+  return h;
+}
+function dimBars(row){
+  return `<div class="dimbars">`+DIMS.map(d=>{
+    const pct=Math.max(0,Math.min(100,Number(row[d.k])||0));
+    const lv=pct>=80?"优秀":pct>=60?"良好":pct>=40?"一般":"偏弱";
+    const c=pct>=80?"#16a34a":pct>=60?"#0ea5e9":pct>=40?"#d97706":"#dc2626";
+    return `<div class="dimrow"><span class="dl">${d.l}</span>
+      <span class="track"><span class="fill" style="width:${pct}%;background:${c}"></span></span>
+      <span class="dv" style="color:${c}">${pct} · ${lv}</span></div>`;
+  }).join("")+`</div>`;
+}
+function openCompare(){
+  const ids=[...document.querySelectorAll(".cmpChk:checked")].map(c=>Number(c.value));
+  if(ids.length<2||ids.length>3){toast("请勾选 2-3 只股票再对比");return;}
+  const rows=ids.map(id=>SNOW_CACHE[id]).filter(Boolean);
+  if(rows.length<2){toast("数据缺失，请刷新列表");return;}
+  const colors=["#2563eb","#d97706","#16a34a"];
+  const size=300,pad=34,cx=size/2,cy=size/2,r=size/2-pad;
+  let svg=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto">`;
+  [1,0.66,0.33].forEach(f=>{svg+=gridPentagon(cx,cy,r*f);});
+  DIMS.forEach((d,i)=>{
+    const ang=-Math.PI/2+i*2*Math.PI/5;
+    svg+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(ang)}" y2="${cy+r*Math.sin(ang)}" stroke="#e5e7eb"/>`;
+    const lx=cx+(r+18)*Math.cos(ang), ly=cy+(r+18)*Math.sin(ang);
+    svg+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#6b7280">${d.l}</text>`;
+  });
+  rows.forEach((row,i)=>{
+    const pts=snowPoints(row,cx,cy,r).map(p=>p.join(",")).join(" ");
+    svg+=`<polygon points="${pts}" fill="${colors[i]}" fill-opacity="0.18" stroke="${colors[i]}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  svg+=`</svg>`;
+  let legend=`<div class="cmp-legend">`+rows.map((row,i)=>
+    `<span><span class="cmp-dot" style="background:${colors[i]}"></span>${esc(row.name||row.code)}（${(row.total_score??0).toFixed(1)}分）</span>`).join("")+`</div>`;
+  let tbl=`<table><thead><tr><th>维度</th>`+rows.map(rw=>`<th>${esc(rw.name||rw.code)}</th>`).join("")+`</tr></thead><tbody>`;
+  DIMS.forEach(d=>{
+    const vals=rows.map(rw=>Number(rw[d.k])||0);
+    const best=Math.max(...vals);
+    tbl+=`<tr><td>${d.l}</td>`+vals.map(v=>`<td ${v===best?'style="color:#16a34a;font-weight:700"':''}>${v}</td>`).join("")+`</tr>`;
+  });
+  tbl+=`<tr><td><b>综合评分</b></td>`+rows.map(rw=>`<td><b>${(rw.total_score??0).toFixed(1)}</b></td>`).join("")+`</tr></tbody></table>`;
+  document.getElementById("compareBody").innerHTML=svg+legend+tbl+
+    `<div class="mini" style="margin-top:10px">绿色数字 = 该维度领先。雪花越大越圆润，代表五个维度越均衡优秀（评分为模型推断，非投资建议）。</div>`;
+  document.getElementById("compareModal").classList.add("open");
+}
+
 // ---------- 列表 ----------
 async function load(){
   const style=document.getElementById("fStyle").value;
@@ -548,11 +674,14 @@ function render(rows){
   const tb=document.getElementById("tbody");tb.innerHTML="";
   document.getElementById("empty").style.display=rows.length?"none":"block";
   document.getElementById("count").textContent=`共 ${rows.length} 只`;
+  SNOW_CACHE={};
   rows.forEach(r=>{
+    if(r.id!=null)SNOW_CACHE[r.id]=r;
     const tr=document.createElement("tr");
     const risk=r.risk_flags&&r.risk_flags!=="无"
       ?`<span class="risk">${r.risk_flags}</span>`:`<span class="risk ok">无</span>`;
     tr.innerHTML=`
+      <td><input type="checkbox" class="cmpChk" value="${r.id}"></td>
       <td><code>${r.code||"-"}</code></td>
       <td>${r.name||"-"}</td>
       <td>${r.industry||"-"}</td>
@@ -560,6 +689,7 @@ function render(rows){
       <td><span class="pill">${r.ai_category||"-"}</span></td>
       <td>${r.price??"-"}</td>
       <td><span class="badge ${badgeClass(r.rating||"")}">${(r.total_score??0).toFixed(1)}</span></td>
+      <td title="${r.dim_summary||""}" onclick="viewDetail(${r.id})">${snowflakeSVG(r,44,false)}</td>
       <td>${(r.rating||"-")} <span class="stars">${r.recommend_index||""}</span></td>
       <td>${risk}</td>
       <td>
@@ -576,7 +706,12 @@ async function viewDetail(id){
   const res=await fetch("/api/stocks/"+id);const r=await res.json();
   document.getElementById("detailTitle").textContent=`${r.name||""}（${r.code||""}）`;
   const b=document.getElementById("detailBody");
-  let h=`<dl>`;
+  let h="";
+  if(r.dim_fundamental!=null){
+    h+=`<div class="snowwrap"><div>${snowflakeSVG(r,220,true)}</div>${dimBars(r)}</div>`;
+    if(r.dim_summary)h+=`<div class="snow-summary">🌨 一句话看懂：${r.dim_summary}（模型推断，非投资建议）</div>`;
+  }
+  h+=`<dl>`;
   COMPUTED.forEach(([k,label])=>{
     let v=r[k];if(v===undefined||v==="")v="—";
     if(k==="risk_flags"&&v!=="无")v=`<span class="risk">${v}</span>`;
@@ -1269,6 +1404,8 @@ document.getElementById("btnExport").onclick=exportJSON;
 document.getElementById("formCancel").onclick=()=>document.getElementById("formModal").classList.remove("open");
 document.getElementById("formSave").onclick=saveForm;
 document.getElementById("detailClose").onclick=()=>document.getElementById("detailModal").classList.remove("open");
+document.getElementById("btnCompare").onclick=openCompare;
+document.getElementById("compareClose").onclick=()=>document.getElementById("compareModal").classList.remove("open");
 document.getElementById("btnFilter").onclick=load;
 document.getElementById("btnReset").onclick=()=>{
   document.getElementById("fStyle").value="";document.getElementById("fIndustry").value="";
