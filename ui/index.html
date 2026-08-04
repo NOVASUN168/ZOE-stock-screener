@@ -1,1558 +1,469 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light" data-market-color="cn">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>股票基金筛选工作台 · stock-screener</title>
-<style>
-  :root{
-    --bg:#f5f7fa; --card:#fff; --ink:#1f2937; --muted:#6b7280;
-    --line:#e5e7eb; --brand:#2563eb; --brand2:#1e40af;
-    --red:#dc2626; --green:#16a34a; --amber:#d97706; --soft:#fff7ed;
-    --blue:#eff6ff;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
-    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
-  header{background:linear-gradient(120deg,#1e40af,#2563eb);color:#fff;padding:16px 24px;
-    display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-  header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.5px}
-  header .sub{font-size:12px;opacity:.85}
-  .spacer{flex:1}
-  button{font-family:inherit;cursor:pointer;border:none;border-radius:8px;padding:8px 14px;
-    font-size:13px;font-weight:600;transition:.15s}
-  .btn-primary{background:#fff;color:var(--brand2)}
-  .btn-ghost{background:rgba(255,255,255,.18);color:#fff}
-  .btn-line{background:#fff;color:var(--brand);border:1px solid var(--line)}
-  .btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
-  .btn-danger{background:#fee2e2;color:var(--red)}
-  nav.tabs{display:flex;gap:4px;padding:10px 24px 0;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .tab{background:transparent;color:var(--muted);border:none;border-bottom:3px solid transparent;
-    padding:10px 16px;font-size:14px;font-weight:600;border-radius:0}
-  .tab.active{color:var(--brand2);border-bottom-color:var(--brand)}
-  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 24px;background:#fff;
-    border-bottom:1px solid var(--line)}
-  .toolbar select,.toolbar input{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit}
-  .wrap{padding:18px 24px;max-width:1280px;margin:0 auto}
-  section{display:none}
-  section.active{display:block}
-  table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}
-  th{background:#f8fafc;color:var(--muted);font-weight:600;font-size:12px}
-  tr:hover{background:#f9fafb}
-  .badge{display:inline-block;min-width:42px;text-align:center;padding:3px 8px;border-radius:20px;
-    font-weight:700;font-size:12px;color:#fff}
-  .b-strong{background:var(--green)} .b-rec{background:#0ea5e9} .b-watch{background:var(--amber)}
-  .b-ok{background:#84cc16} .b-no{background:#9ca3af} .b-excl{background:var(--red)}
-  .risk{color:var(--red);font-weight:600;font-size:12px}
-  .risk.ok{color:var(--muted);font-weight:400}
-  .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:flex-start;
-    justify-content:center;padding:40px 16px;overflow:auto;z-index:50}
-  .modal.open{display:flex}
-  .sheet{background:#fff;border-radius:14px;width:min(860px,100%);max-height:88vh;overflow:auto;
-    box-shadow:0 20px 60px rgba(0,0,0,.25)}
-  .sheet-head{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);padding:16px 22px;
-    display:flex;align-items:center;gap:12px;z-index:2}
-  .sheet-head h2{margin:0;font-size:16px}
-  .sheet-body{padding:18px 22px}
-  .grp{margin-bottom:18px}
-  .grp h3{margin:0 0 10px;font-size:13px;color:var(--brand2);border-left:3px solid var(--brand);padding-left:8px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 16px}
-  .field{display:flex;flex-direction:column;gap:4px}
-  .field label{font-size:12px;color:var(--muted)}
-  .field input,.field select{padding:7px 9px;border:1px solid var(--line);border-radius:7px;font-size:13px;font-family:inherit}
-  .field.chk{flex-direction:row;align-items:center;gap:8px}
-  .field.chk input{width:16px;height:16px}
-  .detail dl{display:grid;grid-template-columns:140px 1fr;gap:8px 14px;margin:0}
-  .detail dt{color:var(--muted);font-size:12px}
-  .detail dd{margin:0;font-size:13px}
-  .stars{color:var(--amber);letter-spacing:2px}
-  .pill{display:inline-block;background:var(--soft);border:1px solid #fed7aa;color:var(--amber);
-    padding:2px 8px;border-radius:6px;font-size:12px;margin:2px 4px 2px 0}
-  .up{color:var(--green)}.dn{color:var(--red)}
-  .empty{padding:40px;text-align:center;color:var(--muted)}
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;
-    padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;z-index:99}
-  .toast.show{opacity:1}
-  code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:12px}
-  .card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:14px}
-  .card h3{margin:0 0 10px;font-size:15px}
-  .risk-banner{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:10px;
-    padding:10px 14px;margin-bottom:8px;font-size:13px}
-  .risk-banner b{color:#991b1b}
-  /* ===== 全局合规风险声明（粗体醒目，全站可见） ===== */
-  .risk-disclaimer{background:#fff7ed;border:1.5px solid #fdba74;color:#9a3412;
-    padding:9px 24px;font-size:13px;font-weight:700;text-align:center;letter-spacing:.2px}
-  .risk-disclaimer b{color:#7c2d12;font-weight:800}
-  .risk-disclaimer .sep{opacity:.6;font-weight:400}
-  .alert-row,.watch-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .trig{background:#fee2e2;color:var(--red);border:1px solid #fca5a5;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600}
-  .idle{background:#f1f5f9;color:var(--muted);padding:2px 8px;border-radius:6px;font-size:12px}
-  .mini{font-size:12px;color:var(--muted)}
-  .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px 14px}
-  .kv div{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
-  .kv b{display:block;font-size:15px;color:var(--brand2)}
-  .kv span{font-size:11px;color:var(--muted)}
-  .gloss dt{font-weight:700;color:var(--brand2);margin-top:8px}
-  .gloss dd{margin:2px 0 6px;font-size:13px;color:var(--ink)}
-  .inline-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}
-  .inline-form .field{width:auto;min-width:140px}
-  .note{font-size:12px;color:var(--muted);background:var(--blue);border:1px solid #bfdbfe;
-    padding:8px 12px;border-radius:8px;margin-bottom:12px}
-  /* ===== 新增模块：登录态 / 筛选方案 / 付费墙 ===== */
-  .userbox{position:relative;display:flex;align-items:center;gap:8px}
-  .uibadge{background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;white-space:nowrap}
-  .umenu{position:absolute;top:42px;right:0;background:#fff;color:var(--ink);border:1px solid var(--line);
-    border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);min-width:210px;z-index:60;padding:8px}
-  .umenu hr{border:none;border-top:1px solid var(--line);margin:8px 0}
-  .umenu button{width:calc(100% - 20px);margin:4px 10px;text-align:left;background:#f8fafc;color:var(--ink)}
-  .umenu label{font-size:11px;color:var(--muted);padding:0 10px;display:block}
-  .umenu input{width:calc(100% - 20px);margin:4px 10px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-family:inherit}
-  .scheme-wrap{display:grid;grid-template-columns:280px 1fr 330px;gap:14px;align-items:start}
-  .col{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
-  .col .scroll{max-height:74vh;overflow:auto;padding:12px}
-  .catalog-grp{margin-bottom:10px}
-  .catalog-grp h4{margin:6px 0;font-size:12px;color:var(--brand2)}
-  .cat-item{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:.12s}
-  .cat-item:hover{border-color:var(--brand);background:var(--blue)}
-  .cat-item .cn{font-weight:600;font-size:13px}
-  .cat-item .cu{font-size:11px;color:var(--muted)}
-  .cat-item .cd{font-size:11px;color:var(--muted);margin-top:2px}
-  .cat-item.locked{opacity:.75}
-  .lock{color:var(--amber);font-size:11px;font-weight:700}
-  .scheme-card{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px;cursor:pointer;transition:.12s}
-  .scheme-card:hover{border-color:var(--brand);background:var(--blue)}
-  .scheme-card.active{border-color:var(--brand);background:var(--blue);box-shadow:0 0 0 2px rgba(37,99,235,.15)}
-  .scheme-card .sn{font-weight:700;font-size:13px}
-  .scheme-card .sm{font-size:11px;color:var(--muted)}
-  .cond-row{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:8px}
-  .cond-row .top{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .cond-row .cname{font-weight:600;font-size:13px}
-  .cond-row .vals{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
-  .cond-row input,.cond-row select{padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:inherit}
-  .cond-row input[type=number]{width:96px}
-  .paywall{background:#fffbeb;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:14px;margin-top:10px;font-size:13px}
-  .paywall code{background:#fef3c7}
-  .vrow{display:flex;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
-  .logtbl td,.logtbl th{font-size:12px}
-  /* ===== V2.3 五维雪花图（借鉴 Simply Wall St Snowflake） ===== */
-  .snowwrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:14px;
-    background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:16px}
-  .dimbars{flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px}
-  .dimrow{display:flex;align-items:center;gap:10px;font-size:12px}
-  .dimrow .dl{width:44px;color:var(--muted);text-align:right}
-  .dimrow .track{flex:1;height:8px;background:#e5e7eb;border-radius:6px;overflow:hidden}
-  .dimrow .fill{height:100%;border-radius:6px;transition:.3s}
-  .dimrow .dv{width:70px;font-weight:600}
-  .snow-summary{background:var(--blue);border:1px solid #bfdbfe;color:var(--brand2);
-    border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px}
-  .minisnow{cursor:pointer;vertical-align:middle}
-  .cmp-legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px}
-  .cmp-legend span{display:flex;align-items:center;gap:6px}
-  .cmp-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
-  @media(max-width:1100px){.scheme-wrap{grid-template-columns:1fr}}
-  /* ===== 定价页 ===== */
-  .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch;margin-top:14px}
-  .plan{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 18px;
-    display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  .plan-hot{border:2px solid var(--brand);box-shadow:0 8px 24px rgba(37,99,235,.15)}
-  .plan-ribbon{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;
-    font-size:12px;font-weight:700;padding:3px 14px;border-radius:20px;white-space:nowrap}
-  .plan-name{font-size:17px;font-weight:800;color:var(--brand2)}
-  .plan-price{font-size:20px;font-weight:800;margin:8px 0 2px}
-  .plan-period{font-size:12px;color:var(--muted);font-weight:500}
-  .plan-tag{font-size:12px;color:var(--amber);font-weight:600;margin-bottom:10px}
-  .plan-feat{list-style:none;padding:0;margin:6px 0 16px;flex:1}
-  .plan-feat li{font-size:13px;padding:6px 0;border-bottom:1px dashed var(--line);color:var(--ink)}
-  .plan-feat li::before{content:"✓ ";color:var(--green);font-weight:700}
-  .plan-btn{width:100%;margin-top:auto}
-  .disclaimer{font-size:13px;color:var(--ink);line-height:1.7}
-  .disclaimer p{margin:0 0 10px}
-  @media(max-width:900px){.pricing-grid{grid-template-columns:1fr}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ZOE 股票基金筛选工作台</title>
+  <!-- 首屏前确定主题，避免暗色闪烁 -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('zoe_theme');
+        if (!t) { t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+        document.documentElement.setAttribute('data-theme', t);
+        var m = localStorage.getItem('zoe_market_color');
+        document.documentElement.setAttribute('data-market-color', m === 'global' ? 'global' : 'cn');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.documentElement.setAttribute('data-market-color', 'cn');
+      }
+    })();
+  </script>
+  <script>
+    // ===== ZOE 后端基地址（手机 / GitHub Pages 跨域访问时用）=====
+    // 用法（任选其一）：
+    //   A. 在 Pages 链接后追加参数： ?api=https://你的后端.onrender.com
+    //   B. 把下面 DEFAULT 改成你的后端地址，永久生效
+    // 前端后端同源时（例如 Render 那条链接）留空即可，自动走同源。
+    (function () {
+      var DEFAULT = "";
+      var fromQuery = null;
+      try { fromQuery = new URLSearchParams(location.search).get('api'); } catch (e) {}
+      var base = (fromQuery && fromQuery.trim()) ? fromQuery.trim().replace(/\/+$/, '') : DEFAULT;
+      window.ZOE_API_BASE = base;
+      if (base) {
+        var _orig = window.fetch.bind(window);
+        window.fetch = function (input, init) {
+          if (typeof input === 'string' && input.indexOf('/api/') === 0) input = base + input;
+          return _orig(input, init);
+        };
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/components.css">
+  <link rel="stylesheet" href="assets/css/components-extra.css">
+  <link rel="stylesheet" href="assets/css/charts.css">
 </head>
 <body>
-<header>
-  <div>
-    <h1>📊 股票基金筛选工作台</h1>
-    <div class="sub">stock-screener V1.1.0 · AI产业聚焦：基本面35% · 估值20% · 成长25%(护城河) · 资金15%(主力长期) · 风险5% · 不做技术分析/不承诺收益</div>
-  </div>
-  <div class="spacer"></div>
-  <button class="btn-ghost" id="btnExport">⬇ 导出 JSON</button>
-  <button class="btn-ghost" id="btnRescore">🔄 重算评分</button>
-  <button class="btn-primary" id="btnAdd">＋ 新增股票</button>
-  <div class="userbox" id="userBox"></div>
-</header>
+  <a class="skip-link" href="#main">跳到主内容</a>
 
-<!-- ============ 全局合规风险声明（粗体，全站可见） ============ -->
-<div class="risk-disclaimer">
-  <b>投资研究工具 / 数据可视化</b>　<span class="sep">——</span>　只做筛选、数据、解读，<b>不荐股 · 不代操 · 不承诺收益</b>
-</div>
-
-<nav class="tabs">
-  <button class="tab active" data-tab="work">📊 工作台</button>
-  <button class="tab" data-tab="alert">🔔 预警·风控</button>
-  <button class="tab" data-tab="port">💼 组合推荐</button>
-  <button class="tab" data-tab="review">📅 每日复盘</button>
-  <button class="tab" data-tab="gloss">📖 新手术语</button>
-  <button class="tab" data-tab="scheme">🔧 筛选方案</button>
-  <button class="tab" data-tab="account">💳 订阅 / 账户</button>
-  <button class="tab" data-tab="pricing">💰 价格 / 订阅</button>
-</nav>
-
-<!-- ============ 工作台 ============ -->
-<section id="panel-work" class="active">
-  <div class="toolbar">
-    <label>风格筛选
-      <select id="fStyle">
-        <option value="">全部</option>
-        <option value="绩优">绩优股</option>
-        <option value="长线">长线股</option>
-      </select>
-    </label>
-    <label>AI分类
-      <select id="fAi">
-        <option value="">全部</option>
-        <option value="核心基础">核心基础</option>
-        <option value="模型平台">模型平台</option>
-        <option value="AI革命">AI革命</option>
-        <option value="AI医药">AI医药</option>
-      </select>
-    </label>
-    <label>市场
-      <select id="fMarket">
-        <option value="">全部</option>
-        <option value="A股">A股</option>
-        <option value="港股">港股</option>
-        <option value="A+H">A+H</option>
-      </select>
-    </label>
-    <label>行业 <input id="fIndustry" placeholder="如：半导体 / 消费"></label>
-    <label>最低分 <input id="fMin" type="number" style="width:80px" placeholder="0"></label>
-    <button class="btn-line" id="btnFilter">筛选</button>
-    <button class="btn-line" id="btnReset">重置</button>
-    <button class="btn-line" id="btnCompare" title="勾选 2-3 只股票后点击，叠加对比五维雪花图">⚖ 雪花对比</button>
-    <span id="count" style="color:var(--muted);font-size:12px"></span>
-  </div>
-  <div class="wrap">
-    <table id="tbl">
-      <thead><tr>
-        <th title="勾选 2-3 只，点上方「雪花对比」">⚖</th>
-        <th>代码</th><th>名称</th><th>行业</th><th>市场</th><th>AI分类</th><th>现价</th>
-        <th>综合评分</th><th>五维雪花</th><th>评级</th><th>风险标记</th><th>操作</th>
-      </tr></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="empty" class="empty" style="display:none">暂无股票，点击右上角「＋ 新增股票」开始录入。</div>
-  </div>
-</section>
-
-<!-- ============ 预警·风控 ============ -->
-<section id="panel-alert">
-  <div class="wrap">
-    <div class="note">🔔 <b>风控提醒</b>：系统自动汇总所有带风险标记的股票，按严重度置顶。<b>预警规则</b>：你设定阈值（评分跌破/价格突破/出现风险），系统基于当前数据快照判定是否触发（非实时行情；接入行情源后可变实时，见 README）。</div>
-    <div class="card">
-      <h3>⚠️ 风控提醒（存在风险须醒目标注）</h3>
-      <div id="riskList"></div>
-    </div>
-    <div class="card">
-      <h3>🔔 我的预警规则</h3>
-      <div class="inline-form">
-        <div class="field"><label>股票</label><select id="alertStock"></select></div>
-        <div class="field"><label>类型</label>
-          <select id="alertType">
-            <option value="score_drop">评分跌破</option>
-            <option value="price_up">价格涨破</option>
-            <option value="price_down">价格跌破</option>
-            <option value="risk_trigger">出现风险标记</option>
-          </select></div>
-        <div class="field"><label>阈值</label><input id="alertThreshold" type="number" placeholder="如 90 / 股价"></div>
-        <div class="field"><label>备注</label><input id="alertNote" placeholder="可选"></div>
-        <button class="btn-primary btn-sm" id="btnAddAlert">＋ 添加预警</button>
-      </div>
-      <div id="alertList"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 组合推荐 ============ -->
-<section id="panel-port">
-  <div class="wrap">
-    <div class="note">💼 V2.0 基于当前评分快照生成三类组合（聚焦 AI 产业与护城河）。配置视图、风险等级、最大回撤<b>均为模型推断</b>，非收益承诺；不做技术分析、不自动下单。</div>
-    <div class="toolbar" style="border-radius:12px 12px 0 0">
-      <button class="btn-line" data-ptype="robust">🛡 稳健型</button>
-      <button class="btn-line" data-ptype="growth">🚀 成长型</button>
-      <button class="btn-line" data-ptype="aggressive">⚡ 激进型</button>
-      <button class="btn-primary btn-sm" id="btnSavePort" style="display:none">💾 保存该组合</button>
-    </div>
-    <div id="portBody" class="wrap" style="padding-top:14px"></div>
-  </div>
-</section>
-
-<!-- ============ 每日复盘 ============ -->
-<section id="panel-review">
-  <div class="wrap">
-    <div class="note">📅 V2.0 买点/回避信号基于<b>主力长期趋势+护城河+评分</b>推断（不做技术分析），热点/轮动/明日重点均为<b>基于快照的推断</b>，非实时行情决策。</div>
-    <button class="btn-line btn-sm" id="btnRefreshReview">🔄 刷新复盘</button>
-    <div id="reviewBody" style="margin-top:12px"></div>
-  </div>
-</section>
-
-<!-- ============ 新手术语 ============ -->
-<section id="panel-gloss">
-  <div class="wrap">
-    <div class="card">
-      <h3>📖 新手术语速查（小白必看）</h3>
-      <dl class="gloss">
-        <dt>五维雪花图（V2.3 新增）</dt><dd>把一只股票的 基本面/估值/成长/资金/安全 五个维度画成一朵"雪花"（借鉴国际知名产品 Simply Wall St）。<b>雪花越大越圆润 = 五维越均衡越优秀</b>；某个角凹进去 = 该维度偏弱。绿色=优秀、蓝色=良好、琥珀=一般、红色=偏弱。列表页每行有迷你雪花，点击可看大图；勾选 2-3 只可叠加对比。</dd>
-        <dt>ROE（净资产收益率）</dt><dd>公司用股东的钱赚钱的能力。>15% 算优秀，越高越好。</dd>
-        <dt>ROA（总资产收益率）</dt><dd>用全部资产赚钱的能力。>8% 较健康。</dd>
-        <dt>PE（市盈率）</dt><dd>股价 ÷ 每股盈利。低于行业均值通常更便宜，但过低可能隐含风险。</dd>
-        <dt>PB（市净率）</dt><dd>股价 ÷ 每股净资产。≤3 一般视为估值合理。</dd>
-        <dt>PEG</dt><dd>PE ÷ 利润增速。<1.5 以内较安全，越低越好。</dd>
-        <dt>EV/EBITDA</dt><dd>企业价值 ÷ 息税折旧前利润。≤15 通常合理。</dd>
-        <dt>安全边际</dt><dd>估算内在价值高于当前价的幅度。>30% 护城河更厚。</dd>
-        <dt>自由现金流</dt><dd>公司真金白银剩下来的钱。为正才健康，能分红/扩张。</dd>
-        <dt>资产负债率</dt><dd>借钱占总资产比例。制造<60%、科技<50% 较安全；金融另算。</dd>
-        <dt>护城河</dt><dd>竞争对手难以复制的优势（品牌/牌照/网络效应）。明显 > 强 > 中等 > 弱。</dd>
-        <dt>MACD / KDJ（V2.0 不参与评分）</dt><dd>技术指标。V2.0 明确“不做技术分析”，这些字段仅作展示，不计入综合评分；买卖决策请以护城河与主力长期趋势为准。</dd>
-        <dt>北向资金 / 主力资金</dt><dd>外资与机构大单流向。净流入通常偏多，净流出偏空。</dd>
-        <dt>商誉占比</dt><dd>并购溢价占净资产比。>40% 减值风险高，是一大雷区。</dd>
-        <dt>质押比例</dt><dd>大股东把股票押给券商借钱的比例。>30% 需警惕，>50% 高风险。</dd>
-      </dl>
-    </div>
-  </div>
-</section>
-
-<!-- ============ 筛选方案（新增模块） ============ -->
-<section id="panel-scheme">
-  <div class="wrap">
-    <div class="note">🔧 <b>数据驱动筛选方案</b>：左侧点选条件目录 → 中部编辑/保存/应用方案 → 右侧查看版本历史与操作日志。所有写操作需登录；权限 owner&gt;admin&gt;editor&gt;viewer，付费条件需激活授权码 <code>ZOE-PREMIUM-xxx</code> 解锁。</div>
-    <div class="scheme-wrap">
-      <!-- 左：条件目录 -->
-      <div class="col">
-        <div class="toolbar" style="border-radius:12px 12px 0 0">
-          <input id="catSearch" placeholder="搜索条件名…" style="flex:1">
-        </div>
-        <div id="catalogBody" class="scroll"></div>
-      </div>
-      <!-- 中：方案列表 + 条件编辑器 -->
-      <div class="col">
-        <div class="toolbar" style="border-radius:12px 12px 0 0;justify-content:space-between">
-          <b>方案列表</b>
-          <button class="btn-primary btn-sm" id="btnNewScheme">＋ 新建方案</button>
-        </div>
-        <div id="schemeList" class="scroll" style="max-height:26vh"></div>
-        <div class="sheet-body">
-          <div class="inline-form">
-            <div class="field" style="flex:1"><label>方案名</label><input id="schemeName" placeholder="如：低估值高ROE"></div>
-            <div class="field" style="flex:2"><label>描述</label><input id="schemeDesc" placeholder="可选"></div>
-            <div class="field chk"><input type="checkbox" id="schemeShared"><label for="schemeShared">共享</label></div>
-          </div>
-          <div class="grp"><h3>当前方案条件</h3><div id="condList"></div></div>
-          <div class="toolbar" style="border-radius:10px;position:sticky;bottom:0;background:#fff">
-            <button class="btn-primary btn-sm" id="btnSaveScheme">💾 保存</button>
-            <button class="btn-line btn-sm" id="btnSnapScheme">📸 快照</button>
-            <button class="btn-line btn-sm" id="btnApplyScheme">▶ 应用</button>
-            <button class="btn-line btn-sm" id="btnPinScheme">⭐ 置顶</button>
-            <button class="btn-danger btn-sm" id="btnDelScheme">🗑 删除</button>
-            <button class="btn-line btn-sm" id="btnExportScheme">📤 导出git</button>
-            <button class="btn-line btn-sm" id="btnPullScheme">🔄 下拉刷新</button>
-          </div>
-        </div>
-        <div id="screenResult" class="scroll" style="padding:12px"></div>
-      </div>
-      <!-- 右：版本历史 + 操作日志 + 用户管理 -->
-      <div class="col">
-        <div class="card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--line)">
-          <h3>🕑 版本历史</h3><div id="versionList"></div>
-        </div>
-        <div class="card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--line)">
-          <h3>📜 操作日志</h3><div id="opLogList" class="scroll" style="max-height:30vh"></div>
-        </div>
-        <div class="card" id="userMgmt" style="margin:0;border-radius:0;border:none;display:none"></div>
+  <!-- ============ 顶栏（桌面 + 移动共用，移动端折叠） ============ -->
+  <header class="app-header">
+    <button class="icon-btn nav-toggle" aria-label="打开菜单" data-drawer="navDrawer">☰</button>
+    <div class="brand">
+      <span class="brand-mark">📊</span>
+      <div class="brand-text">
+        <div class="brand-title">股票基金筛选工作台 <span class="brand-ver">V1.1.0</span></div>
+        <div class="brand-sub">AI产业聚焦：基本面35% · 估值20% · 成长25% · 资金15% · 风险5% · 不荐股 · 不承诺收益</div>
       </div>
     </div>
+    <div class="spacer"></div>
+    <div class="header-actions">
+      <button class="icon-btn" id="mktToggle" onclick="toggleMarketColor()" title="涨跌配色：A股红涨绿跌 / 全球绿涨红跌" aria-label="切换涨跌配色">🔁</button>
+      <button class="icon-btn" id="themeToggle" onclick="toggleTheme()" title="切换明暗主题" aria-label="切换主题">🌓</button>
+      <button class="btn-ghost btn-sm hide-on-mobile" id="btnExport">⬇ 导出</button>
+      <button class="btn-ghost btn-sm hide-on-mobile" id="btnRescore">🔄 重算</button>
+      <button class="btn-primary btn-sm hide-on-mobile" id="btnAdd">＋ 新增</button>
+      <div class="userbox" id="userBox"></div>
+    </div>
+  </header>
+
+  <!-- ============ 全局合规风险声明 ============ -->
+  <div class="risk-disclaimer">
+    <b>投资研究工具 / 数据可视化</b>　<span class="sep">——</span>　只做筛选、数据、解读，<b>不荐股 · 不代操 · 不承诺收益</b>
   </div>
-</section>
 
-<!-- ============ 订阅 / 账户 ============ -->
-<section id="panel-account">
-  <div class="wrap">
-    <div class="note">💳 <b>订阅 / 账户</b>：订阅后可解锁全部高级筛选条件。🎁 <b>新用户前 3 个月免费</b>试用全功能（Stripe 90 天试用期，期间不扣费）。也可使用离线激活码 <code>ZOE-PREMIUM-xxx</code> 解锁，两种途径效果一致。</div>
-    <div class="card">
-      <h3>当前订阅状态</h3>
-      <div class="kv" id="billingStatus">
-        <div><b id="billingTier">—</b><span>当前版本</span></div>
-        <div><b id="billingExpiry">—</b><span>到期日</span></div>
-        <div><b id="billingMode">—</b><span>计费模式</span></div>
-      </div>
-      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn-primary" id="btnCheckout">💳 前往订阅</button>
-        <span class="mini" id="checkoutHint"></span>
-      </div>
-    </div>
-    <div class="card">
-      <h3>离线激活码</h3>
-      <div class="inline-form" style="margin-bottom:0">
-        <div class="field" style="flex:1;min-width:200px"><label>激活授权码</label><input id="accLicKey" placeholder="ZOE-PREMIUM-xxxx"></div>
-        <button class="btn-line" id="btnAccActivate">激活授权</button>
-      </div>
-      <div class="mini" style="margin-top:8px">说明：授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁全部高级筛选条件；订阅后亦可获得同等授权。</div>
-    </div>
-  </div>
-</section>
+  <!-- ============ 桌面标签栏（≥1024px 显示） ============ -->
+  <nav class="tabbar" aria-label="主导航">
+    <button class="tab is-active" data-tab="work">📊 工作台</button>
+    <button class="tab" data-tab="alert">🔔 预警·风控</button>
+    <button class="tab" data-tab="port">💼 组合推荐</button>
+    <button class="tab" data-tab="review">📅 每日复盘</button>
+    <button class="tab" data-tab="gloss">📖 新手术语</button>
+    <button class="tab" data-tab="scheme">🔧 筛选方案</button>
+    <button class="tab" data-tab="account">💳 订阅 / 账户</button>
+    <button class="tab" data-tab="pricing">💰 价格 / 订阅</button>
+  </nav>
 
-<!-- ============ 价格 / 订阅 ============ -->
-<section id="panel-pricing">
-  <div class="wrap">
-    <div class="risk-disclaimer" style="margin-bottom:14px">
-      <b>投资研究工具 / 数据可视化</b>　<span class="sep">——</span>　只做筛选、数据、解读，<b>不荐股 · 不代操 · 不承诺收益</b>
-    </div>
-    <div class="card" style="text-align:center">
-      <h3 style="margin-bottom:6px">🎁 新用户前 3 个月免费，全功能畅用</h3>
-      <p id="trialLabel" style="margin:0;color:var(--muted);font-size:13px">订阅会员版 / 高阶版即享 90 天免费试用期（Stripe 自动设置），期间不扣费；试用结束后按所选档位自动续费，随时可在 Stripe 取消。</p>
-    </div>
-    <div class="pricing-grid" id="pricingGrid">
-      <!-- 免费版 -->
-      <div class="plan">
-        <div class="plan-name">免费版</div>
-        <div class="plan-price">¥0 <span class="plan-period">永久免费</span></div>
-        <div class="plan-tag">先体验，再决定</div>
-        <ul class="plan-feat">
-          <li>基础条件筛选（基本面 / 估值 / 成长 / 资金 / 风险）</li>
-          <li>每日限次查看五维雪花图</li>
-          <li>AI 产业聚焦基础视图</li>
-          <li>组合推荐（基于评分快照）</li>
-        </ul>
-        <button class="btn-line plan-btn" onclick="switchTab('work')">去体验 →</button>
-      </div>
-      <!-- 会员版 -->
-      <div class="plan plan-hot">
-        <div class="plan-ribbon">主推</div>
-        <div class="plan-name">会员版</div>
-        <div class="plan-price" id="planMemberPrice">¥19/月 或 ¥199/年</div>
-        <div class="plan-tag">个人投资者首选</div>
-        <ul class="plan-feat">
-          <li>无限查看五维雪花大图 + 多只对比</li>
-          <li>真实主力资金流 / 北向资金</li>
-          <li>AI 产业聚焦深度解读（护城河 / 长期逻辑）</li>
-          <li>价格 / 评分 / 风险 三维预警</li>
-          <li>多只组合叠加对比</li>
-          <li>优先体验新功能</li>
-        </ul>
-        <button class="btn-primary plan-btn" onclick="openCheckout('member_monthly')">💳 订阅会员版（前3月免费）</button>
-      </div>
-      <!-- 高阶版 -->
-      <div class="plan">
-        <div class="plan-name">高阶版</div>
-        <div class="plan-price" id="planProPrice">¥49/月 或 ¥499/年</div>
-        <div class="plan-tag">进阶研究 / 多市场</div>
-        <ul class="plan-feat">
-          <li>含会员版全部功能</li>
-          <li>策略回测（历史胜率 / 回撤）</li>
-          <li>多市场覆盖（A股 / 港股 / A+H）</li>
-          <li>数据导出 / API 接入</li>
-          <li>专属答疑</li>
-        </ul>
-        <button class="btn-primary plan-btn" onclick="openCheckout('pro_monthly')">💳 订阅高阶版（前3月免费）</button>
-      </div>
-    </div>
+  <!-- ============ 全局遮罩（抽屉共用，必须是 .drawer 的兄弟节点） ============
+       注意：.drawer 自身带 transform，会成为 fixed 定位的包含块。
+       若把 .scrim 放进 .drawer 内部，遮罩只能覆盖抽屉自身宽度，无法全屏。 -->
+  <div class="scrim" id="scrim" aria-hidden="true"></div>
 
-    <div class="card" style="margin-top:14px">
-      <h3>📜 免责声明（务必阅读）</h3>
-      <div class="disclaimer" id="disclaimerBox">
-        <p><b>1. 产品定位。</b>ZOE 股票筛选器是一个<b>投资研究工具 / 数据可视化</b>平台，仅提供股票数据的<b>筛选、展示与解读</b>功能。我们<b>不提供个性化投资建议、不代客理财、不承诺任何收益</b>。</p>
-        <p><b>2. 非投资建议。</b>本平台所有评分、评级、五维雪花图、组合推荐、买点 / 卖点信号均为基于历史数据与既定模型的<b>客观计算与推断</b>，不构成任何证券买卖建议，也不构成对特定投资者的针对性意见。</p>
-        <p><b>3. 数据与延迟。</b>数据来源于公开行情接口，可能存在延迟、缺口或错误；实时性以行情源为准。因数据偏差导致的任何决策损失，本平台不承担责任。</p>
-        <p><b>4. 风险自担。</b>证券市场有风险，入市需谨慎。任何投资行为均由您本人独立决策并承担全部盈亏后果。过往表现不代表未来收益。</p>
-        <p><b>5. 无收益承诺。</b>本平台不保证、不暗示、不承诺任何收益率或保本。任何"稳赚""必涨"类表述均非本平台观点。</p>
-        <p><b>6. 责任限制。</b>在法律允许范围内，本平台对因使用（或无法使用）本服务导致的直接或间接损失不承担责任。如您所在地区对投资工具另有监管规定，请以当地法规为准。</p>
-        <p class="mini" style="margin-top:8px">完整版免责声明见 <code>docs/免责声明.html</code>。本声明随产品迭代可能更新，请以页面最新版本为准。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 登录 弹窗 -->
-<div class="modal" id="loginModal">
-  <div class="sheet" style="width:min(420px,100%)">
-    <div class="sheet-head"><h2>登录</h2><div class="spacer"></div><button class="btn-line btn-sm" id="loginClose">关闭</button></div>
-    <div class="sheet-body">
-      <div class="field"><label>用户名</label><input id="loginUser" placeholder="用户名"></div>
-      <div class="field"><label>密码</label><input id="loginPass" type="password" placeholder="密码"></div>
-      <button class="btn-primary" id="loginBtn" style="margin-top:6px">登录</button>
-      <div class="note" style="margin-top:12px">离线测试授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁付费条件。</div>
-      <div class="field" style="margin-top:4px"><label>激活授权码（可选）</label><input id="licKey" placeholder="ZOE-PREMIUM-xxxx"></div>
-      <button class="btn-line btn-sm" id="licBtn">激活授权</button>
-    </div>
-  </div>
-</div>
-
-<!-- 新增/编辑 弹窗 -->
-<div class="modal" id="formModal">
-  <div class="sheet">
-    <div class="sheet-head">
-      <h2 id="formTitle">新增股票</h2><div class="spacer"></div>
-      <button class="btn-line btn-sm" id="formCancel">取消</button>
-      <button class="btn-primary btn-sm" id="formSave">保存并评分</button>
-    </div>
-    <div class="sheet-body" id="formBody"></div>
-  </div>
-</div>
-
-<!-- 详情 弹窗 -->
-<div class="modal" id="detailModal">
-  <div class="sheet">
-    <div class="sheet-head">
-      <h2 id="detailTitle">股票详情</h2><div class="spacer"></div>
-      <button class="btn-line btn-sm" id="detailClose">关闭</button>
-    </div>
-    <div class="sheet-body detail" id="detailBody"></div>
-  </div>
-</div>
-
-<!-- 雪花对比 弹窗 -->
-<div class="modal" id="compareModal">
-  <div class="sheet" style="width:min(720px,100%)">
-    <div class="sheet-head">
-      <h2>⚖ 五维雪花对比</h2><div class="spacer"></div>
-      <button class="btn-line btn-sm" id="compareClose">关闭</button>
-    </div>
-    <div class="sheet-body" id="compareBody"></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script>
-// ---------- 字段定义（key 必须与 db.py / scoring.py 完全一致） ----------
-const GROUPS = [
-  {g:"基础", items:[
-    {k:"code",l:"股票代码",t:"text",ph:"sh600519"},
-    {k:"name",l:"名称",t:"text",ph:"贵州茅台"},
-    {k:"industry",l:"行业",t:"text",ph:"消费/白酒"},
-    {k:"price",l:"当前价格",t:"number",ph:"1500"},
-  ]},
-  {g:"基本面(35%)", items:[
-    {k:"roe",l:"ROE(%)",t:"number",ph:">15"},
-    {k:"roa",l:"ROA(%)",t:"number",ph:">8"},
-    {k:"rev_growth_years",l:"营收连续增长年数",t:"number",ph:"0-3"},
-    {k:"netprofit_growth_years",l:"净利润连续增长年数",t:"number",ph:"0-3"},
-    {k:"fcf_positive",l:"自由现金流转正",t:"chk"},
-    {k:"debt_ratio",l:"资产负债率(%)",t:"number",ph:"制造<60/科技<50"},
-    {k:"sector_type",l:"行业类型",t:"sel",opts:["制造业","科技","金融","其他"]},
-  ]},
-  {g:"估值(20%)", items:[
-    {k:"pe",l:"PE",t:"number"},
-    {k:"pe_industry_avg",l:"行业PE均值",t:"number"},
-    {k:"pb",l:"PB",t:"number",ph:"<=3 佳"},
-    {k:"peg",l:"PEG",t:"number",ph:"<1.5"},
-    {k:"ev_ebitda",l:"EV/EBITDA",t:"number",ph:"<=15"},
-    {k:"safety_margin",l:"安全边际(%)",t:"number",ph:">30"},
-  ]},
-  {g:"成长(25%)", items:[
-    {k:"rd_increase",l:"研发投入持续增加",t:"chk"},
-    {k:"mkt_share_growth",l:"市场份额增长",t:"chk"},
-    {k:"industry_space",l:"行业空间",t:"sel",opts:["大","中","小"]},
-    {k:"moat",l:"护城河",t:"sel",opts:["明显","强","中等","弱","无"]},
-    {k:"profit_forecast_3y",l:"未来三年利润增速(%)",t:"number"},
-  ]},
-  {g:"范围与AI分类(V2.0)", items:[
-    {k:"market",l:"市场",t:"sel",opts:["A股","港股","A+H"]},
-    {k:"board",l:"板块",t:"sel",opts:["主板","创业板","科创板","北交所","H股","红筹","民营港股"]},
-    {k:"ai_category",l:"AI分类",t:"sel",opts:["核心基础","模型平台","AI革命","AI医药"]},
-    {k:"ai_driven",l:"是否AI驱动",t:"sel",opts:["1","0"]},
-    {k:"research_signals",l:"信息来源信号",t:"text",ph:"公告;产品进展;技术突破;客户采用;产业变化;监管动态"},
-  ]},
-  {g:"资金(15%·主力长期)", items:[
-    {k:"main_force_trend",l:"主力长期趋势",t:"sel",opts:["流入","持平","流出"]},
-    {k:"northbound",l:"北向资金",t:"sel",opts:["增持","持平","减持"]},
-    {k:"institution_change",l:"机构持仓(10日)",t:"sel",opts:["增仓","持平","减仓"]},
-  ]},
-  {g:"软风险(5%)", items:[
-    {k:"financial_risk",l:"财务风险",t:"chk"},
-    {k:"litigation",l:"重大诉讼",t:"chk"},
-    {k:"pledge_ratio",l:"质押比例(%)",t:"number"},
-    {k:"regulatory_penalty",l:"监管处罚",t:"chk"},
-    {k:"goodwill_ratio",l:"商誉占比(%)",t:"number"},
-  ]},
-  {g:"硬过滤(一票否决)", items:[
-    {k:"st_flag",l:"ST股",t:"chk"},
-    {k:"delisting_risk",l:"退市风险",t:"chk"},
-    {k:"fraud_flag",l:"财务造假嫌疑",t:"chk"},
-    {k:"consecutive_loss",l:"连续亏损",t:"chk"},
-    {k:"major_holder_reduction",l:"大股东减持",t:"chk"},
-    {k:"high_pledge",l:"高质押",t:"chk"},
-  ]},
-];
-
-const COMPUTED = [
-  ["total_score","综合评分"],["rating","评级"],["recommend_index","推荐指数"],
-  ["risk_flags","风险标记"],["reasonable_valuation","估值看法(推断)"],
-  ["suggested_position","配置视图"],["expected_hold","预计持有(长期)"],
-  ["core_competence","核心竞争力(护城河)"],["long_term_thesis","长期研究逻辑"],
-  ["advantages","优势"],["risks_text","风险提示"],["recommend_reasons","推荐理由(4条)"],
-];
-
-const ALERT_TYPES = {score_drop:"评分跌破", price_up:"价格涨破", price_down:"价格跌破", risk_trigger:"出现风险标记"};
-let EDIT_ID = null;
-let LAST_PORT = null;
-
-// ---------- 工具 ----------
-function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),1800);}
-function badgeClass(rating){
-  if(rating.includes("强烈推荐"))return"b-strong";
-  if(rating.includes("推荐"))return"b-rec";
-  if(rating.includes("关注"))return"b-watch";
-  if(rating.includes("排除"))return"b-excl";
-  if(rating.includes("一般"))return"b-ok";
-  return"b-no";}
-function switchTab(name){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
-  document.querySelectorAll("section").forEach(s=>s.classList.toggle("active",s.id==="panel-"+name));
-  if(name==="alert") loadAlertTab();
-  if(name==="port") {/* 等待用户点类型 */}
-  if(name==="review") loadReview();
-  if(name==="scheme") loadSchemeTab();
-  if(name==="account") loadAccountTab();
-  if(name==="pricing") loadPricingTab();
-}
-
-// ---------- 渲染表单 ----------
-function buildForm(data={}){
-  const body=document.getElementById("formBody");body.innerHTML="";
-  GROUPS.forEach(grp=>{
-    const div=document.createElement("div");div.className="grp";
-    div.innerHTML=`<h3>${grp.g}</h3>`;
-    const grid=document.createElement("div");grid.className="grid";
-    grp.items.forEach(it=>{
-      const f=document.createElement("div");
-      const val=data[it.k];
-      if(it.t==="chk"){
-        f.className="field chk";
-        f.innerHTML=`<input type="checkbox" id="f_${it.k}" ${val?"checked":""}><label for="f_${it.k}">${it.l}</label>`;
-      }else if(it.t==="sel"){
-        const opts=`<option value="">—</option>`+it.opts.map(o=>`<option ${val===o?"selected":""}>${o}</option>`).join("");
-        f.className="field";
-        f.innerHTML=`<label>${it.l}</label><select id="f_${it.k}">${opts}</select>`;
-      }else{
-        f.className="field";
-        f.innerHTML=`<label>${it.l}</label><input id="f_${it.k}" type="${it.t}" value="${val??""}" placeholder="${it.ph??""}">`;
-      }
-      grid.appendChild(f);
-    });
-    div.appendChild(grid);body.appendChild(div);
-  });
-}
-function collectForm(){
-  const d={};
-  GROUPS.forEach(grp=>grp.items.forEach(it=>{
-    if(it.t==="chk"){d[it.k]=document.getElementById("f_"+it.k).checked?1:0;}
-    else{let v=document.getElementById("f_"+it.k).value.trim();
-      if(v===""){d[it.k]="";}
-      else if(it.t==="number"){d[it.k]=isNaN(parseFloat(v))?"":parseFloat(v);}
-      else{d[it.k]=v;}
-    }
-  }));
-  return d;
-}
-
-// ---------- V2.3 五维雪花图（借鉴 Simply Wall St Snowflake） ----------
-const DIMS=[
-  {k:"dim_fundamental",l:"基本面"},
-  {k:"dim_valuation",l:"估值"},
-  {k:"dim_growth",l:"成长"},
-  {k:"dim_capital",l:"资金"},
-  {k:"dim_safety",l:"安全"},
-];
-let SNOW_CACHE={};   // id -> row（含 dim_* 字段），供迷你图/对比使用
-function snowColor(score){
-  if(score>=80)return"#16a34a";      // 优：绿（与评级徽章一致）
-  if(score>=65)return"#0ea5e9";      // 良：蓝
-  if(score>=50)return"#d97706";      // 中：琥珀
-  return"#dc2626";                    // 弱：红
-}
-function snowPoints(row,cx,cy,r){
-  // 5 个维度从正上方开始顺时针，值 0-100 映射到半径
-  return DIMS.map((d,i)=>{
-    const pct=Math.max(0,Math.min(100,Number(row[d.k])||0));
-    const ang=-Math.PI/2+i*2*Math.PI/5;
-    const rr=r*(0.08+0.92*pct/100);
-    return [cx+rr*Math.cos(ang), cy+rr*Math.sin(ang)];
-  });
-}
-function gridPentagon(cx,cy,r){
-  const pts=DIMS.map((d,i)=>{
-    const ang=-Math.PI/2+i*2*Math.PI/5;
-    return `${cx+r*Math.cos(ang)},${cy+r*Math.sin(ang)}`;
-  }).join(" ");
-  return `<polygon points="${pts}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
-}
-function snowflakeSVG(row,size,withLabels){
-  const pad=withLabels?30:2;
-  const cx=size/2,cy=size/2,r=size/2-pad;
-  const color=snowColor(Number(row.total_score)||0);
-  let h=`<svg class="${withLabels?"":"minisnow"}" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`;
-  [1,0.66,0.33].forEach(f=>{h+=gridPentagon(cx,cy,r*f);});
-  DIMS.forEach((d,i)=>{
-    const ang=-Math.PI/2+i*2*Math.PI/5;
-    h+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(ang)}" y2="${cy+r*Math.sin(ang)}" stroke="#e5e7eb" stroke-width="1"/>`;
-    if(withLabels){
-      const lx=cx+(r+16)*Math.cos(ang), ly=cy+(r+16)*Math.sin(ang);
-      h+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#6b7280">${d.l}</text>`;
-    }
-  });
-  const pts=snowPoints(row,cx,cy,r).map(p=>p.join(",")).join(" ");
-  h+=`<polygon points="${pts}" fill="${color}" fill-opacity="0.28" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>`;
-  if(withLabels){
-    snowPoints(row,cx,cy,r).forEach(p=>{h+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${color}"/>`;});
-  }
-  h+=`</svg>`;
-  return h;
-}
-function dimBars(row){
-  return `<div class="dimbars">`+DIMS.map(d=>{
-    const pct=Math.max(0,Math.min(100,Number(row[d.k])||0));
-    const lv=pct>=80?"优秀":pct>=60?"良好":pct>=40?"一般":"偏弱";
-    const c=pct>=80?"#16a34a":pct>=60?"#0ea5e9":pct>=40?"#d97706":"#dc2626";
-    return `<div class="dimrow"><span class="dl">${d.l}</span>
-      <span class="track"><span class="fill" style="width:${pct}%;background:${c}"></span></span>
-      <span class="dv" style="color:${c}">${pct} · ${lv}</span></div>`;
-  }).join("")+`</div>`;
-}
-function openCompare(){
-  const ids=[...document.querySelectorAll(".cmpChk:checked")].map(c=>Number(c.value));
-  if(ids.length<2||ids.length>3){toast("请勾选 2-3 只股票再对比");return;}
-  const rows=ids.map(id=>SNOW_CACHE[id]).filter(Boolean);
-  if(rows.length<2){toast("数据缺失，请刷新列表");return;}
-  const colors=["#2563eb","#d97706","#16a34a"];
-  const size=300,pad=34,cx=size/2,cy=size/2,r=size/2-pad;
-  let svg=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;margin:0 auto">`;
-  [1,0.66,0.33].forEach(f=>{svg+=gridPentagon(cx,cy,r*f);});
-  DIMS.forEach((d,i)=>{
-    const ang=-Math.PI/2+i*2*Math.PI/5;
-    svg+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(ang)}" y2="${cy+r*Math.sin(ang)}" stroke="#e5e7eb"/>`;
-    const lx=cx+(r+18)*Math.cos(ang), ly=cy+(r+18)*Math.sin(ang);
-    svg+=`<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#6b7280">${d.l}</text>`;
-  });
-  rows.forEach((row,i)=>{
-    const pts=snowPoints(row,cx,cy,r).map(p=>p.join(",")).join(" ");
-    svg+=`<polygon points="${pts}" fill="${colors[i]}" fill-opacity="0.18" stroke="${colors[i]}" stroke-width="2" stroke-linejoin="round"/>`;
-  });
-  svg+=`</svg>`;
-  let legend=`<div class="cmp-legend">`+rows.map((row,i)=>
-    `<span><span class="cmp-dot" style="background:${colors[i]}"></span>${esc(row.name||row.code)}（${(row.total_score??0).toFixed(1)}分）</span>`).join("")+`</div>`;
-  let tbl=`<table><thead><tr><th>维度</th>`+rows.map(rw=>`<th>${esc(rw.name||rw.code)}</th>`).join("")+`</tr></thead><tbody>`;
-  DIMS.forEach(d=>{
-    const vals=rows.map(rw=>Number(rw[d.k])||0);
-    const best=Math.max(...vals);
-    tbl+=`<tr><td>${d.l}</td>`+vals.map(v=>`<td ${v===best?'style="color:#16a34a;font-weight:700"':''}>${v}</td>`).join("")+`</tr>`;
-  });
-  tbl+=`<tr><td><b>综合评分</b></td>`+rows.map(rw=>`<td><b>${(rw.total_score??0).toFixed(1)}</b></td>`).join("")+`</tr></tbody></table>`;
-  document.getElementById("compareBody").innerHTML=svg+legend+tbl+
-    `<div class="mini" style="margin-top:10px">绿色数字 = 该维度领先。雪花越大越圆润，代表五个维度越均衡优秀（评分为模型推断，非投资建议）。</div>`;
-  document.getElementById("compareModal").classList.add("open");
-}
-
-// ---------- 列表 ----------
-async function load(){
-  const style=document.getElementById("fStyle").value;
-  const ai=document.getElementById("fAi").value;
-  const mkt=document.getElementById("fMarket").value;
-  const ind=document.getElementById("fIndustry").value.trim();
-  const min=document.getElementById("fMin").value.trim();
-  let url="/api/stocks?"+[style?`style=${encodeURIComponent(style)}`:"",
-    ai?`ai_category=${encodeURIComponent(ai)}`:"",
-    mkt?`market=${encodeURIComponent(mkt)}`:"",
-    ind?`industry=${encodeURIComponent(ind)}`:"",
-    min?`min_score=${encodeURIComponent(min)}`:""].filter(Boolean).join("&");
-  const res=await fetch(url);const rows=await res.json();
-  render(rows);
-}
-function render(rows){
-  const tb=document.getElementById("tbody");tb.innerHTML="";
-  document.getElementById("empty").style.display=rows.length?"none":"block";
-  document.getElementById("count").textContent=`共 ${rows.length} 只`;
-  SNOW_CACHE={};
-  rows.forEach(r=>{
-    if(r.id!=null)SNOW_CACHE[r.id]=r;
-    const tr=document.createElement("tr");
-    const risk=r.risk_flags&&r.risk_flags!=="无"
-      ?`<span class="risk">${r.risk_flags}</span>`:`<span class="risk ok">无</span>`;
-    tr.innerHTML=`
-      <td><input type="checkbox" class="cmpChk" value="${r.id}"></td>
-      <td><code>${r.code||"-"}</code></td>
-      <td>${r.name||"-"}</td>
-      <td>${r.industry||"-"}</td>
-      <td>${r.market||"-"}</td>
-      <td><span class="pill">${r.ai_category||"-"}</span></td>
-      <td>${r.price??"-"}</td>
-      <td><span class="badge ${badgeClass(r.rating||"")}">${(r.total_score??0).toFixed(1)}</span></td>
-      <td title="${r.dim_summary||""}" onclick="viewDetail(${r.id})">${snowflakeSVG(r,44,false)}</td>
-      <td>${(r.rating||"-")} <span class="stars">${r.recommend_index||""}</span></td>
-      <td>${risk}</td>
-      <td>
-        <button class="btn-line btn-sm" onclick="viewDetail(${r.id})">查看</button>
-        <button class="btn-line btn-sm" onclick="openEdit(${r.id})">编辑</button>
-        <button class="btn-line btn-sm" style="color:var(--red)" onclick="del(${r.id})">删除</button>
-      </td>`;
-    tb.appendChild(tr);
-  });
-}
-
-// ---------- 详情 ----------
-async function viewDetail(id){
-  const res=await fetch("/api/stocks/"+id);const r=await res.json();
-  document.getElementById("detailTitle").textContent=`${r.name||""}（${r.code||""}）`;
-  const b=document.getElementById("detailBody");
-  let h="";
-  if(r.dim_fundamental!=null){
-    h+=`<div class="snowwrap"><div>${snowflakeSVG(r,220,true)}</div>${dimBars(r)}</div>`;
-    if(r.dim_summary)h+=`<div class="snow-summary">🌨 一句话看懂：${r.dim_summary}（模型推断，非投资建议）</div>`;
-  }
-  h+=`<dl>`;
-  COMPUTED.forEach(([k,label])=>{
-    let v=r[k];if(v===undefined||v==="")v="—";
-    if(k==="risk_flags"&&v!=="无")v=`<span class="risk">${v}</span>`;
-    if(k==="recommend_reasons")v=v.split("|").map(s=>`<span class="pill">${s}</span>`).join("");
-    h+=`<dt>${label}</dt><dd>${v}</dd>`;
-  });
-  h+=`</dl>`;
-  b.innerHTML=h;
-  document.getElementById("detailModal").classList.add("open");
-}
-
-// ---------- 新增/编辑 ----------
-function openAdd(){EDIT_ID=null;document.getElementById("formTitle").textContent="新增股票";
-  buildForm({});document.getElementById("formModal").classList.add("open");}
-async function openEdit(id){EDIT_ID=id;
-  const res=await fetch("/api/stocks/"+id);const r=await res.json();
-  document.getElementById("formTitle").textContent="编辑："+(r.name||r.code);
-  buildForm(r);document.getElementById("formModal").classList.add("open");}
-async function saveForm(){
-  const d=collectForm();
-  const opt={method:EDIT_ID?"PUT":"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(d)};
-  const url=EDIT_ID?("/api/stocks/"+EDIT_ID):"/api/stocks";
-  const res=await fetch(url,opt);const r=await res.json();
-  if(r&&(r.id||r.total_score!=null)){
-    toast(EDIT_ID?"已更新并重新评分":"已新增并评分："+ (r.total_score??""));
-    document.getElementById("formModal").classList.remove("open");
-    load();
-  }else{toast("保存失败："+(r.error||"未知错误"));}
-}
-async function del(id){
-  if(!confirm("确认删除该股票？"))return;
-  await fetch("/api/stocks/"+id,{method:"DELETE"});
-  toast("已删除");load();
-}
-
-// ---------- 预警·风控 ----------
-async function loadAlertTab(){
-  // 风控提醒
-  const rr=await fetch("/api/risk-reminders");const risks=await rr.json();
-  const rl=document.getElementById("riskList");
-  if(!risks.length) rl.innerHTML=`<div class="mini">✅ 当前无风险标记股票。</div>`;
-  else rl.innerHTML=risks.map(x=>`<div class="risk-banner"><b>${x.stock.name}</b> （${x.stock.code}）— ${x.flags} ${x.hard?'<b>· 已一票否决</b>':''}</div>`).join("");
-  // 股票下拉
-  const sr=await fetch("/api/stocks");const stocks=await sr.json();
-  document.getElementById("alertStock").innerHTML=stocks.map(s=>`<option value="${s.id}">${s.name}（${s.code}）</option>`).join("");
-  await loadAlerts();
-}
-async function loadAlerts(){
-  const ar=await fetch("/api/alerts");const alerts=await ar.json();
-  const al=document.getElementById("alertList");
-  if(!alerts.length){al.innerHTML=`<div class="mini">暂无预警规则，上方添加一条。</div>`;return;}
-  al.innerHTML=alerts.map(x=>{
-    const tg=x.triggered?`<span class="trig">已触发 · ${x.reason}</span>`:`<span class="idle">未触发</span>`;
-    const th=x.alert.threshold!=null?`阈值 ${x.alert.threshold}`:"";
-    return `<div class="alert-row">
-      <b>${x.stock.name}</b> · ${ALERT_TYPES[x.alert.atype]||x.alert.atype} ${th}
-      ${tg} <span class="mini">${x.alert.note||""}</span>
+  <!-- ============ 移动端全站抽屉（次级导航 + 账户） ============ -->
+  <aside class="drawer" id="navDrawer" role="dialog" aria-modal="true" aria-label="导航菜单">
+    <div class="drawer-head">
+      <span class="brand-mark">📊</span>
+      <strong>导航</strong>
       <span class="spacer" style="flex:1"></span>
-      <button class="btn-danger btn-sm" onclick="delAlert(${x.alert.id})">删除</button>
-    </div>`;
-  }).join("");
-}
-async function addAlert(){
-  const stock_id=document.getElementById("alertStock").value;
-  const atype=document.getElementById("alertType").value;
-  const threshold=document.getElementById("alertThreshold").value.trim();
-  const note=document.getElementById("alertNote").value.trim();
-  if(!stock_id){toast("请先选择股票");return;}
-  const body={stock_id:Number(stock_id), atype, note};
-  if(atype!=="risk_trigger" && threshold!=="") body.threshold=parseFloat(threshold);
-  await fetch("/api/alerts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  document.getElementById("alertThreshold").value="";document.getElementById("alertNote").value="";
-  toast("已添加预警");await loadAlerts();
-}
-async function delAlert(id){await fetch("/api/alerts/"+id,{method:"DELETE"});toast("已删除");await loadAlerts();}
+      <button class="icon-btn" data-close-drawer aria-label="关闭菜单">✕</button>
+    </div>
+    <div class="drawer-section">
+      <button class="drawer-item" data-tab="work"><span class="di-ico">📊</span>工作台</button>
+      <button class="drawer-item" data-tab="alert"><span class="di-ico">🔔</span>预警·风控</button>
+      <button class="drawer-item" data-tab="port"><span class="di-ico">💼</span>组合推荐</button>
+      <button class="drawer-item" data-tab="review"><span class="di-ico">📅</span>每日复盘</button>
+      <button class="drawer-item" data-tab="gloss"><span class="di-ico">📖</span>新手术语</button>
+      <button class="drawer-item" data-tab="scheme"><span class="di-ico">🔧</span>筛选方案</button>
+      <button class="drawer-item" data-tab="account"><span class="di-ico">💳</span>订阅 / 账户</button>
+      <button class="drawer-item" data-tab="pricing"><span class="di-ico">💰</span>价格 / 订阅</button>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-label">显示</div>
+      <button class="drawer-item" onclick="toggleTheme()"><span class="di-ico">🌓</span>明暗主题</button>
+      <button class="drawer-item" onclick="toggleMarketColor()"><span class="di-ico">🔁</span>涨跌配色（A股/全球）</button>
+    </div>
+    <div id="mobileUserSlot"></div>
+  </aside>
 
-// ---------- 组合推荐 ----------
-async function loadPortfolio(ptype){
-  const r=await fetch("/api/portfolio?ptype="+ptype);const g=await r.json();
-  LAST_PORT={ptype, name:g.name, picks:g.picks};
-  let h=`<div class="kv">
-    <div><b>${g.risk_level}</b><span>风险等级</span></div>
-    <div><b>${g.alloc_view||"-"}</b><span>配置视图</span></div>
-    <div><b>${g.max_drawdown}</b><span>最大回撤(推断)</span></div>
-    <div><b>${g.avg_score}</b><span>组合均分</span></div>
-    <div><b>${g.count}</b><span>持仓数</span></div>
-  </div>`;
-  h+=`<table style="margin-top:12px"><thead><tr><th>名称</th><th>行业</th><th>评分</th><th>配置</th><th>配置视图</th><th>持有(长期)</th><th>风险标记</th></tr></thead><tbody>`;
-  g.picks.forEach(p=>{
-    const rf=p.risk_flags&&p.risk_flags!=="无"?`<span class="risk">${p.risk_flags}</span>`:`<span class="risk ok">无</span>`;
-    h+=`<tr><td>${p.name}</td><td>${p.industry||"-"}</td><td>${p.score}</td><td><b>${p.alloc_pct}%</b></td><td>${p.suggested_position||"-"}</td><td>${p.expected_hold||"-"}</td><td>${rf}</td></tr>`;
-  });
-  h+=`</tbody></table>`;
-  h+=`<div class="mini" style="margin-top:10px">行业占比：`+Object.entries(g.industry_pct).map(([k,v])=>`${k} ${v}%`).join(" · ")+`</div>`;
-  h+=`<div class="note" style="margin-top:8px">${g.note}</div>`;
-  document.getElementById("portBody").innerHTML=h;
-  document.getElementById("btnSavePort").style.display="inline-block";
-}
-async function savePortfolio(){
-  if(!LAST_PORT){toast("请先生成组合");return;}
-  await fetch("/api/portfolio/save",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({ptype:LAST_PORT.ptype,name:LAST_PORT.name,picks:LAST_PORT.picks,note:""})});
-  toast("已保存组合："+LAST_PORT.name);
-}
+  <!-- ============ 主内容 ============ -->
+  <main class="app-main" id="main">
 
-// ---------- 每日复盘 ----------
-async function loadReview(){
-  const r=await fetch("/api/review");const d=await r.json();
-  let h=`<div class="card"><h3>🟢 买点信号（${d.buy.length}）</h3>`;
-  h+= d.buy.length? d.buy.map(b=>`<div class="alert-row"><b>${b.stock.name}</b> · ${b.reasons.join(" / ")}</div>`).join("") : `<div class="mini">暂无明确买点。</div>`;
-  h+=`</div>`;
-  h+=`<div class="card"><h3>🔴 卖点信号（${d.sell.length}）</h3>`;
-  h+= d.sell.length? d.sell.map(s=>`<div class="alert-row"><b>${s.stock.name}</b> · ${s.reasons.join(" / ")}</div>`).join("") : `<div class="mini">暂无明确卖点。</div>`;
-  h+=`</div>`;
-  h+=`<div class="card"><h3>⚠️ 风险警示（${d.risks.length}）</h3>`;
-  h+= d.risks.length? d.risks.map(x=>`<div class="risk-banner"><b>${x.stock.name}</b> — ${x.flags}</div>`).join("") : `<div class="mini">暂无风险警示。</div>`;
-  h+=`</div>`;
-  h+=`<div class="card"><h3>🔥 市场热点 / 行业轮动</h3><div class="kv">`;
-  d.rotation.forEach(x=>{h+=`<div><b>${x.avg_score}</b><span>${x.industry} · ${x.count}只</span></div>`;});
-  h+=`</div><div class="mini" style="margin-top:8px">热点行业：${d.hot_topics.map(h=>h.industry).join("、")}</div></div>`;
-  h+=`<div class="card"><h3>📌 明日重点关注</h3>`;
-  h+= d.tomorrow_focus.length? d.tomorrow_focus.map(f=>`<div class="alert-row">${f}</div>`).join("") : `<div class="mini">暂无。</div>`;
-  h+=`</div>`;
-  document.getElementById("reviewBody").innerHTML=h;
-}
-
-// ---------- 顶部操作 ----------
-async function rescoreAll(){await fetch("/api/rescore",{method:"POST"});toast("已重算全部评分");load();}
-async function exportJSON(){
-  const res=await fetch("/api/stocks");const rows=await res.json();
-  const blob=new Blob([JSON.stringify(rows,null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
-  a.download="stock-screener-export.json";a.click();toast("已导出 "+rows.length+" 条");
-}
-
-// =================== 新增模块：登录态 / 筛选方案 / 付费墙 ===================
-const state = {
-  user: getUser(),
-  token: getToken(),
-  tier: null,            // 'free' | 'premium'
-  billing: {enabled:false, mode:"test", tier:null, expiry:null},  // 来自 /api/billing/status
-  catalog: [],
-  schemes: [],
-  currentScheme: null,   // {id,name,description,is_shared,is_pinned,...}
-  conditions: [],        // 编辑器条件 [{catalog_key,operator,value,value2,enabled,_meta}]
-  dirty: false,
-};
-window.__rowCache = [];  // 股票结果行缓存，供详情弹窗使用
-
-// ---------- 基础工具 ----------
-function getToken(){ return localStorage.getItem("zoe_token"); }
-function getUser(){ try{ return JSON.parse(localStorage.getItem("zoe_user")||"null"); }catch(e){ return null; } }
-function roleRank(role){ return {viewer:1,editor:2,admin:3,owner:4}[role]||0; }
-function isLoggedIn(){ return !!state.user; }
-function canEdit(){ return isLoggedIn() && roleRank(state.user.role)>=2; }   // editor+
-function canAdmin(){ return isLoggedIn() && (state.user.role==="admin"||state.user.role==="owner"); }
-function canOwner(){ return isLoggedIn() && state.user.role==="owner"; }
-function roleLabel(r){ return {owner:"拥有者",admin:"管理员",editor:"编辑",viewer:"只读"}[r]||r; }
-function tierLabel(){ return state.tier==="premium"?"premium":"free"; }
-function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-// 统一请求封装：自动带 Bearer；401->清 token 并跳登录；403->提示无权限
-async function api(method, path, body){
-  const opt={method, headers:{}};
-  const tk=getToken();
-  if(tk) opt.headers["Authorization"]="Bearer "+tk;
-  if(body!==undefined){ opt.headers["Content-Type"]="application/json"; opt.body=JSON.stringify(body); }
-  const res=await fetch(path, opt);
-  let data=null;
-  try{ const t=await res.text(); data=t?JSON.parse(t):null; }catch(e){ data=null; }
-  if(res.status===401){
-    localStorage.removeItem("zoe_token"); localStorage.removeItem("zoe_user");
-    state.user=null; state.token=null; renderUserBox();
-    openLogin("登录已失效或未完成，请重新登录");
-    const e=new Error("unauthorized"); e.status=401; throw e;
-  }
-  if(res.status===403){
-    toast("无权限：当前角色（"+(state.user?roleLabel(state.user.role):"未登录")+"）不可执行该操作");
-    const e=new Error("forbidden"); e.status=403; throw e;
-  }
-  return {res, data};
-}
-
-// ---------- 用户态 UI ----------
-function renderUserBox(){
-  const box=document.getElementById("userBox");
-  const u=state.user;
-  if(!u){ box.innerHTML=`<button class="btn-primary btn-sm" onclick="openLogin()">登录</button>`; return; }
-  box.innerHTML=`<div class="uibadge">👤 ${esc(u.display_name||u.username)} · ${roleLabel(u.role)} · <span id="tierTag">${tierLabel()}</span></div>
-    <button class="btn-ghost btn-sm" onclick="toggleUserMenu()">▼</button>
-    <div class="umenu" id="userMenu" style="display:none">
-      <label>🔓 激活授权码（解锁付费条件）</label>
-      <input id="licKey2" placeholder="ZOE-PREMIUM-xxxx">
-      <button class="btn-line btn-sm" id="licBtn2">激活授权</button>
-      <hr>
-      <button onclick="doLogout()">退出登录</button>
-    </div>`;
-  document.getElementById("licBtn2").onclick=activateLicense;
-}
-function toggleUserMenu(){
-  const m=document.getElementById("userMenu");
-  if(m) m.style.display = (m.style.display==="none"||!m.style.display)?"block":"none";
-}
-async function refreshLicense(){
-  try{ const {res,data}=await api("GET","/api/license/status"); if(res.ok&&data) state.tier=data.tier||state.tier; }catch(e){}
-  const tag=document.getElementById("tierTag"); if(tag) tag.textContent=tierLabel();
-}
-async function restoreSession(){
-  const tk=getToken();
-  if(!tk){ renderUserBox(); return; }
-  try{
-    const {res,data}=await api("GET","/api/auth/me");
-    if(res.ok){ state.user=data.user; localStorage.setItem("zoe_user",JSON.stringify(data.user)); }
-  }catch(e){ /* api 已处理 401 */ }
-  await refreshLicense();
-  renderUserBox();
-}
-function openLogin(msg){ if(msg) toast(msg);
-  document.getElementById("loginUser").value="";
-  document.getElementById("loginPass").value="";
-  document.getElementById("licKey").value="";
-  document.getElementById("loginModal").classList.add("open");
-}
-function closeLogin(){ document.getElementById("loginModal").classList.remove("open"); }
-async function doLogin(){
-  const username=document.getElementById("loginUser").value.trim();
-  const password=document.getElementById("loginPass").value;
-  if(!username||!password){ toast("请输入用户名和密码"); return; }
-  try{
-    const res=await fetch("/api/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});
-    const d=await res.json();
-    if(res.ok){
-      localStorage.setItem("zoe_token",d.token); localStorage.setItem("zoe_user",JSON.stringify(d.user));
-      state.user=d.user; state.token=d.token; closeLogin(); renderUserBox();
-      await refreshLicense();
-      if(document.getElementById("panel-scheme").classList.contains("active")) loadSchemeTab();
-      toast("登录成功："+(d.user.display_name||d.user.username));
-    } else { toast("登录失败："+(d.error||"401")); }
-  }catch(e){ toast("登录请求失败"); }
-}
-async function doLogout(){
-  try{ await fetch("/api/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+getToken()}}); }catch(e){}
-  localStorage.removeItem("zoe_token"); localStorage.removeItem("zoe_user");
-  state.user=null; state.token=null; state.tier=null; state.currentScheme=null; state.conditions=[]; state.dirty=false;
-  renderUserBox(); toast("已退出登录");
-  if(document.getElementById("panel-scheme").classList.contains("active")) loadSchemeTab();
-}
-async function activateLicense(key){
-  if(!key){
-    let k=(document.getElementById("licKey2")||{value:""}).value.trim();
-    if(!k){ const el=document.getElementById("licKey"); k=el?el.value.trim():""; }
-    key=k;
-  }
-  if(!key){ toast("请输入授权码"); return; }
-  try{
-    const {res,data}=await api("POST","/api/license/activate",{key});
-    if(res.ok){ state.tier=data.tier||"premium"; await refreshLicense(); renderUserBox();
-      toast("授权已激活："+(data.tier||"premium")+(data.expiry?" · 至 "+data.expiry:"")); }
-    else { toast("激活失败："+(data&&data.error||res.status)); }
-  }catch(e){}
-}
-
-// ---------- 订阅 / 账户 ----------
-async function loadBilling(){
-  try{
-    const {res,data}=await api("GET","/api/billing/status");
-    if(res.ok && data){ state.billing=data; }
-  }catch(e){ /* 401/403 已由 api 处理 */ }
-  return state.billing;
-}
-async function openCheckout(plan){
-  try{
-    const p = plan || "premium_monthly";
-    const {res,data}=await api("POST","/api/billing/checkout",{plan:p});
-    if(res.ok && data && data.ok && data.checkout_url){
-      window.open(data.checkout_url, "_blank");
-    } else if(data && data.error==="billing_not_configured"){
-      toast("商家尚未开启在线订阅，可使用下方激活码");
-    } else {
-      toast("无法发起订阅："+(data&&data.error||res.status));
-    }
-  }catch(e){}
-}
-async function loadAccountTab(){
-  const b=await loadBilling();
-  renderBilling(b);
-}
-// 定价页：从 /api/pricing 拉取方案并刷新价格/试用文案（API 不可用时保持静态默认）
-async function loadPricingTab(){
-  try{
-    const {res,data}=await api("GET","/api/pricing");
-    if(!res.ok || !data) return;
-    if(data.trial_label){
-      const tl=document.getElementById("trialLabel");
-      if(tl) tl.textContent=data.trial_label;
-    }
-    const plans=(data.plans||[]);
-    const member=plans.find(p=>p.id==="member");
-    const pro=plans.find(p=>p.id==="pro");
-    if(member && member.price){ const m=document.getElementById("planMemberPrice"); if(m) m.textContent=member.price; }
-    if(pro && pro.price){ const p=document.getElementById("planProPrice"); if(p) p.textContent=pro.price; }
-  }catch(e){ /* 静默：用静态默认值 */ }
-}
-function renderBilling(b){
-  const tierEl=document.getElementById("billingTier");
-  const expEl=document.getElementById("billingExpiry");
-  const modeEl=document.getElementById("billingMode");
-  const btn=document.getElementById("btnCheckout");
-  const hint=document.getElementById("checkoutHint");
-  if(!tierEl) return;
-  tierEl.textContent = (b && b.tier==="premium") ? "高级版" : "免费版";
-  expEl.textContent = (b && b.expiry) ? b.expiry : "未设置";
-  modeEl.textContent = (b && b.mode) ? (b.mode==="live"?"正式":"测试") : "—";
-  if(b && b.enabled){
-    btn.disabled=false; btn.onclick=openCheckout; hint.textContent="";
-  }else{
-    btn.disabled=true; btn.onclick=null; hint.textContent="在线订阅未开启";
-  }
-}
-async function activateFromAccount(){
-  const el=document.getElementById("accLicKey");
-  const key=el ? el.value.trim() : "";
-  if(!key){ toast("请输入激活码"); return; }
-  await activateLicense(key);
-  await loadBilling(); renderBilling(state.billing);
-  if(el) el.value="";
-}
-
-// ---------- 筛选方案 ----------
-async function loadSchemeTab(){
-  if(!isLoggedIn()){ renderSchemeLocked(); return; }
-  await Promise.all([loadCatalog(), loadSchemes(), loadOpLogs()]);
-  renderEditorButtons();
-}
-function renderSchemeLocked(){
-  document.getElementById("catalogBody").innerHTML=`<div class="empty">请先登录以使用筛选方案（右上角「登录」）。</div>`;
-  document.getElementById("schemeList").innerHTML="";
-  document.getElementById("condList").innerHTML="";
-  document.getElementById("screenResult").innerHTML="";
-  document.getElementById("versionList").innerHTML="";
-  document.getElementById("opLogList").innerHTML="";
-  renderEditorButtons();
-}
-const OP_LABELS={gt:"大于",lt:"小于",between:"介于",eq:"等于",neq:"不等于",in:"属于",like:"包含"};
-const OP_BY_FTYPE={numeric:["gt","lt","between","eq"], enum:["in","eq","neq"], bool:["eq"]};
-function defaultOp(ftype){ return OP_BY_FTYPE[ftype]?OP_BY_FTYPE[ftype][0]:"eq"; }
-
-async function loadCatalog(){
-  const {res,data}=await api("GET","/api/filter-catalog");
-  if(res.ok) state.catalog=data||[];
-  renderCatalog();
-}
-function renderCatalog(){
-  const body=document.getElementById("catalogBody");
-  const q=(document.getElementById("catSearch").value||"").trim().toLowerCase();
-  const order=["财务","估值","资金","技术","题材","风险"];
-  const groups={};
-  (state.catalog||[]).forEach(it=>{ if(q && !((it.name||"").toLowerCase().includes(q))) return; (groups[it.grp]=groups[it.grp]||[]).push(it); });
-  let html="";
-  order.concat(Object.keys(groups).filter(g=>!order.includes(g))).forEach(g=>{
-    const items=groups[g]; if(!items||!items.length) return;
-    html+=`<div class="catalog-grp"><h4>${esc(g)}</h4>`;
-    items.forEach(it=>{
-      const locked=it.is_premium===1||it.is_premium==="1";
-      const unit=it.unit?("（"+esc(it.unit)+"）"):"";
-      const lock=locked?` <span class="lock">🔒 需授权</span>`:"";
-      html+=`<div class="cat-item ${locked?"locked":""}" onclick="addCondition('${esc(it.key)}')">
-        <div class="cn">${esc(it.name)}${lock}</div>
-        <div class="cu">${unit} <code>${esc(it.key)}</code> · ${esc(it.ftype)}</div>
-        ${it.description?`<div class="cd">${esc(it.description)}</div>`:""}
-      </div>`;
-    });
-    html+=`</div>`;
-  });
-  body.innerHTML=html||`<div class="mini">无匹配条件。</div>`;
-}
-function catalogItem(key){ return (state.catalog||[]).find(it=>it.key===key); }
-function enumVals(meta){
-  let e=meta.enum_values;
-  if(Array.isArray(e)) return e.map(String);
-  if(typeof e==="string"&&e) return e.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
-  return [];
-}
-function addCondition(key){
-  const meta=catalogItem(key); if(!meta){ toast("目录未加载，请刷新"); return; }
-  const op=meta.operator||defaultOp(meta.ftype);
-  const c={catalog_key:key, operator:op, value:"", value2:"", enabled:true, _meta:meta};
-  if(meta.ftype==="enum"){ const ev=enumVals(meta); if(ev.length) c.value=ev[0]; }
-  if(meta.ftype==="bool"){ c.value="1"; }
-  state.conditions.push(c); state.dirty=true; renderConditions(); renderEditorButtons();
-}
-function renderConditions(){
-  const el=document.getElementById("condList");
-  if(!state.conditions.length){ el.innerHTML=`<div class="mini">尚未添加条件。点击左侧目录项加入。</div>`; return; }
-  el.innerHTML=state.conditions.map((c,idx)=>{
-    const m=c._meta||catalogItem(c.catalog_key)||{};
-    const locked=m.is_premium===1||m.is_premium==="1";
-    const ops=(OP_BY_FTYPE[m.ftype]||["eq"]).map(o=>`<option value="${o}" ${c.operator===o?"selected":""}>${OP_LABELS[o]||o}</option>`).join("");
-    let valHtml="";
-    if(m.ftype==="enum"){
-      const opts=enumVals(m).map(v=>`<option value="${esc(v)}" ${String(c.value)===String(v)?"selected":""}>${esc(v)}</option>`).join("");
-      valHtml=`<select data-cidx="${idx}" data-cfield="value">${opts}</select>`;
-    } else if(m.ftype==="bool"){
-      valHtml=`<select data-cidx="${idx}" data-cfield="value">
-        <option value="1" ${c.value==="1"?"selected":""}>是</option>
-        <option value="0" ${c.value!=="1"?"selected":""}>否</option></select>`;
-    } else {
-      if(c.operator==="between"){
-        valHtml=`<input type="number" data-cidx="${idx}" data-cfield="value" value="${esc(c.value)}" placeholder="最小">
-          <span>~</span>
-          <input type="number" data-cidx="${idx}" data-cfield="value2" value="${esc(c.value2)}" placeholder="最大">`;
-      } else {
-        valHtml=`<input type="number" data-cidx="${idx}" data-cfield="value" value="${esc(c.value)}" placeholder="数值">`;
-      }
-    }
-    return `<div class="cond-row">
-      <div class="top">
-        <span class="cname">${esc(m.name||c.catalog_key)}</span>
-        ${locked?`<span class="lock">🔒</span>`:""}
-        <span class="cu">${m.unit?esc(m.unit):""}</span>
-        <span class="spacer" style="flex:1"></span>
-        <label class="mini"><input type="checkbox" data-cidx="${idx}" data-cfield="enabled" ${c.enabled?"checked":""}> 启用</label>
-        <button class="btn-danger btn-sm" onclick="removeCondition(${idx})">删除</button>
+    <!-- 工作台 -->
+    <section class="panel is-active" id="panel-work">
+      <div class="container">
+        <div class="toolbar">
+          <label>风格筛选
+            <select id="fStyle"><option value="">全部</option><option value="绩优">绩优股</option><option value="长线">长线股</option></select>
+          </label>
+          <label>AI分类
+            <select id="fAi"><option value="">全部</option><option value="核心基础">核心基础</option><option value="模型平台">模型平台</option><option value="AI革命">AI革命</option><option value="AI医药">AI医药</option></select>
+          </label>
+          <label>市场
+            <select id="fMarket"><option value="">全部</option><option value="A股">A股</option><option value="港股">港股</option><option value="A+H">A+H</option></select>
+          </label>
+          <label>行业 <input id="fIndustry" placeholder="如：半导体 / 消费"></label>
+          <label>最低分 <input id="fMin" type="number" style="width:80px" placeholder="0"></label>
+          <button class="btn-line" id="btnFilter">筛选</button>
+          <button class="btn-line" id="btnReset">重置</button>
+          <button class="btn-line" id="btnCompare" title="勾选 2-3 只股票后点击，叠加对比五维雪花图">⚖ 雪花对比</button>
+          <span id="count" class="mini" style="color:var(--text-muted)"></span>
+        </div>
+        <div class="only-mobile" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <button class="btn-primary btn-sm" id="btnAddMobile">＋ 新增</button>
+          <button class="btn-ghost btn-sm" id="btnExportMobile">⬇ 导出</button>
+          <button class="btn-ghost btn-sm" id="btnRescoreMobile">🔄 重算</button>
+        </div>
+        <div id="stockTable"></div>
       </div>
-      <div class="vals">
-        <select data-cidx="${idx}" data-cfield="operator" onchange="onOpChange(${idx},this.value)">${ops}</select>
-        ${valHtml}
-      </div>
-    </div>`;
-  }).join("");
-}
-function onOpChange(idx,newOp){
-  state.conditions=readConditionsFromDOM();
-  state.conditions[idx].operator=newOp;
-  state.dirty=true; renderConditions(); renderEditorButtons();
-}
-function removeCondition(idx){ state.conditions.splice(idx,1); state.dirty=true; renderConditions(); renderEditorButtons(); }
-function readConditionsFromDOM(){
-  return state.conditions.map((c,idx)=>{
-    const m=c._meta||catalogItem(c.catalog_key)||{};
-    const op=document.querySelector(`[data-cidx="${idx}"][data-cfield="operator"]`);
-    let value="", value2="";
-    if(m.ftype==="enum"||m.ftype==="bool"){
-      const v=document.querySelector(`[data-cidx="${idx}"][data-cfield="value"]`); value=v?v.value:"";
-    } else {
-      const v1=document.querySelector(`[data-cidx="${idx}"][data-cfield="value"]`);
-      const v2=document.querySelector(`[data-cidx="${idx}"][data-cfield="value2"]`);
-      value=v1?v1.value:""; value2=v2?v2.value:"";
-    }
-    const en=document.querySelector(`[data-cidx="${idx}"][data-cfield="enabled"]`);
-    return {catalog_key:c.catalog_key, operator:op?op.value:c.operator, value, value2, enabled:en?en.checked:true};
-  });
-}
-function cleanCondForSend(c){
-  const m=catalogItem(c.catalog_key)||{};
-  const out={catalog_key:c.catalog_key, operator:c.operator, value:c.value, value2:c.value2, enabled:c.enabled};
-  if(m.ftype==="numeric"){
-    out.value = (c.value===""||c.value==null)?null:parseFloat(c.value);
-    out.value2 = (c.operator==="between") ? ((c.value2===""||c.value2==null)?null:parseFloat(c.value2)) : null;
-  }
-  return out;
-}
+    </section>
 
-async function loadSchemes(){
-  const {res,data}=await api("GET","/api/schemes");
-  if(res.ok) state.schemes=data||[];
-  renderSchemeList();
-}
-function renderSchemeList(){
-  const el=document.getElementById("schemeList");
-  if(!state.schemes.length){ el.innerHTML=`<div class="mini">暂无方案。点击「＋ 新建方案」。</div>`; return; }
-  el.innerHTML=state.schemes.map(s=>{
-    const active=(state.currentScheme&&state.currentScheme.id===s.id)?"active":"";
-    const pin=s.is_pinned?"⭐":""; const share=s.is_shared?"🔗":"";
-    return `<div class="scheme-card ${active}" onclick="openScheme(${s.id})">
-      <div class="sn">${pin} ${esc(s.name)} ${share}</div>
-      <div class="sm">所有者：${esc(s.owner_name||s.owner||"-")} · 条件 ${Array.isArray(s.conditions)?s.conditions.length:0}</div>
-    </div>`;
-  }).join("");
-}
-async function openScheme(id){
-  const {res,data}=await api("GET","/api/schemes/"+id);
-  if(!res.ok){ toast("加载方案失败"); return; }
-  state.currentScheme={id, name:data.name, description:data.description, is_shared:!!data.is_shared, is_pinned:!!data.is_pinned};
-  state.conditions=(data.conditions||[]).map(c=>{
-    const meta=catalogItem(c.catalog_key)||{};
-    return {catalog_key:c.catalog_key, operator:c.operator, value:c.value??"", value2:c.value2??"", enabled:c.enabled!==0&&c.enabled!==false, _meta:meta};
-  });
-  state.dirty=false;
-  document.getElementById("schemeName").value=data.name||"";
-  document.getElementById("schemeDesc").value=data.description||"";
-  document.getElementById("schemeShared").checked=!!data.is_shared;
-  document.getElementById("screenResult").innerHTML="";
-  renderSchemeList(); renderConditions(); renderEditorButtons();
-  await loadVersions(id);
-}
-function newScheme(){
-  state.currentScheme=null; state.conditions=[]; state.dirty=false;
-  document.getElementById("schemeName").value="";
-  document.getElementById("schemeDesc").value="";
-  document.getElementById("schemeShared").checked=false;
-  document.getElementById("screenResult").innerHTML="";
-  document.getElementById("versionList").innerHTML="";
-  renderSchemeList(); renderConditions(); renderEditorButtons();
-}
-async function saveScheme(){
-  if(!canEdit()){ toast("无权限（需 editor 及以上）"); return; }
-  const name=document.getElementById("schemeName").value.trim();
-  const description=document.getElementById("schemeDesc").value.trim();
-  const is_shared=document.getElementById("schemeShared").checked?1:0;
-  if(!name){ toast("请填写方案名"); return; }
-  const conditions=readConditionsFromDOM().map(cleanCondForSend);
-  if(state.currentScheme&&state.currentScheme.id){
-    const {res,data}=await api("PUT","/api/schemes/"+state.currentScheme.id,{name,description,is_shared,conditions});
-    if(res.ok){ toast("已更新并自动快照"); state.dirty=false; await loadSchemes(); }
-    else toast("保存失败："+(data&&data.error||res.status));
-  } else {
-    const {res,data}=await api("POST","/api/schemes",{name,description,is_shared,conditions});
-    if(res.ok){ state.currentScheme={id:data.id,name,description,is_shared}; state.dirty=false; toast("已新建并自动快照"); await loadSchemes(); await loadVersions(data.id); }
-    else toast("新建失败："+(data&&data.error||res.status));
-  }
-}
-async function deleteScheme(){
-  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
-  if(!confirm("确认删除该方案？")) return;
-  const {res,data}=await api("DELETE","/api/schemes/"+state.currentScheme.id);
-  if(res.ok){ toast("已删除"); newScheme(); await loadSchemes(); }
-  else toast("删除失败："+(data&&data.error||res.status));
-}
-async function pinScheme(pinned){
-  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
-  if(!canEdit()){ toast("无权限"); return; }
-  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/pin",{pinned});
-  if(res.ok){ toast(pinned?"已置顶":"已取消置顶"); await loadSchemes(); } else toast("操作失败："+(data&&data.error||res.status));
-}
-async function snapshotScheme(){
-  if(!state.currentScheme||!state.currentScheme.id){ toast("请先保存方案再快照"); return; }
-  if(!canEdit()){ toast("无权限"); return; }
-  const note=prompt("快照备注（可选）：","")||"";
-  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/snapshot",{note});
-  if(res.ok){ toast("已快照"); await loadVersions(state.currentScheme.id); } else toast("快照失败："+(data&&data.error||res.status));
-}
-async function applyScheme(){
-  if(!state.conditions.length){ toast("请先添加筛选条件"); return; }
-  const body = (state.dirty || !state.currentScheme || !state.currentScheme.id)
-    ? {conditions: readConditionsFromDOM().map(cleanCondForSend)}
-    : {scheme_id: state.currentScheme.id};
-  try{
-    const {res,data}=await api("POST","/api/screen",body);
-    if(res.status===402){
-      const key=(data&&data.condition)?"<code>"+esc(data.condition)+"</code>":"<b>付费条件</b>";
-      const b=await loadBilling();
-      const enabled=(b && b.enabled);
-      const billingHtml = enabled
-        ? `<button class="btn-line btn-sm" onclick="openCheckout()">💳 前往订阅</button>`
-        : `<button class="btn-line btn-sm" disabled title="在线订阅未开启">💳 前往订阅（未开启）</button> <span class="mini">在线订阅未开启</span>`;
-      document.getElementById("screenResult").innerHTML=
-        `<div class="paywall">🔒 此筛选含 ${key}，请激活授权码或使用在线订阅解锁后重试：
-          <div style="margin-top:10px;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-            <div class="field" style="flex:1;min-width:200px"><label>离线激活码</label><input id="payLic" placeholder="ZOE-PREMIUM-xxxx"></div>
-            <button class="btn-line btn-sm" onclick="activateLicense(document.getElementById('payLic').value)">激活</button>
-            ${billingHtml}
+    <!-- 预警·风控 -->
+    <section class="panel" id="panel-alert">
+      <div class="container">
+        <div class="note">🔔 <b>风控提醒</b>：系统自动汇总所有带风险标记的股票，按严重度置顶。<b>预警规则</b>：你设定阈值（评分跌破/价格突破/出现风险），系统基于当前数据快照判定是否触发（非实时行情；接入行情源后可变实时）。</div>
+        <div class="card">
+          <h3>⚠️ 风控提醒（存在风险须醒目标注）</h3>
+          <div id="riskList"></div>
+        </div>
+        <div class="card">
+          <h3>🔔 我的预警规则</h3>
+          <div class="inline-form">
+            <div class="field"><label>股票</label><select id="alertStock"></select></div>
+            <div class="field"><label>类型</label>
+              <select id="alertType">
+                <option value="score_drop">评分跌破</option>
+                <option value="price_up">价格涨破</option>
+                <option value="price_down">价格跌破</option>
+                <option value="risk_trigger">出现风险标记</option>
+              </select>
+            </div>
+            <div class="field"><label>阈值</label><input id="alertThreshold" type="number" placeholder="如 90 / 股价"></div>
+            <div class="field"><label>备注</label><input id="alertNote" placeholder="可选"></div>
+            <button class="btn-primary btn-sm" id="btnAddAlert">＋ 添加预警</button>
           </div>
-          <div class="mini" style="margin-top:6px">订阅 / 账户页可查看完整订阅状态与到期日。</div>
-        </div>`;
-      return;
-    }
-    if(!res.ok){ toast("筛选失败："+(data&&data.error||res.status)); return; }
-    renderScreenResults(data.results||[]);
-  }catch(e){ /* 401/403 已由 api 处理 */ }
-}
-function renderScreenResults(rows){
-  const el=document.getElementById("screenResult");
-  if(!rows.length){ el.innerHTML=`<div class="empty">未命中任何股票。</div>`; return; }
-  window.__rowCache=[];
-  let h=`<div class="mini">共命中 ${rows.length} 只</div><table><thead><tr><th>代码</th><th>名称</th><th>行业</th><th>评分</th><th>评级</th><th>风险</th><th></th></tr></thead><tbody>`;
-  rows.forEach(r=>{
-    window.__rowCache.push(r);
-    const idx=window.__rowCache.length-1;
-    const risk=(r.risk_flags&&r.risk_flags!=="无")?`<span class="risk">${esc(r.risk_flags)}</span>`:`<span class="risk ok">无</span>`;
-    h+=`<tr><td><code>${esc(r.code||"-")}</code></td><td>${esc(r.name||"-")}</td><td>${esc(r.industry||"-")}</td>
-      <td><span class="badge ${badgeClass(r.rating||"")}">${(r.total_score!=null?r.total_score:0).toFixed(1)}</span></td>
-      <td>${esc(r.rating||"-")}</td><td>${risk}</td>
-      <td><button class="btn-line btn-sm" onclick="showRowDetail(${idx})">详情</button></td></tr>`;
-  });
-  h+=`</tbody></table>`;
-  el.innerHTML=h;
-}
-function showRowDetail(idx){
-  const r=window.__rowCache[idx]; if(!r) return;
-  document.getElementById("detailTitle").textContent=`${r.name||""}（${r.code||""}）`;
-  let h=`<dl>`;
-  Object.keys(r).forEach(k=>{ let v=r[k]; if(v===undefined||v==="")v="—";
-    if(k==="risk_flags"&&v!=="无") v=`<span class="risk">${esc(v)}</span>`;
-    h+=`<dt>${esc(k)}</dt><dd>${typeof v==="object"?esc(JSON.stringify(v)):esc(v)}</dd>`; });
-  h+=`</dl>`;
-  document.getElementById("detailBody").innerHTML=h;
-  document.getElementById("detailModal").classList.add("open");
-}
-async function loadVersions(id){
-  const {res,data}=await api("GET","/api/schemes/"+id+"/versions");
-  const el=document.getElementById("versionList");
-  if(!res.ok){ el.innerHTML=`<div class="mini">版本加载失败</div>`; return; }
-  if(!data.length){ el.innerHTML=`<div class="mini">暂无版本快照。</div>`; return; }
-  el.innerHTML=data.map(v=>`<div class="vrow">
-    <b>v${esc(v.version_no)}</b> <span class="mini">${esc(v.created_at||"")}</span>
-    <span class="mini">${esc(v.created_by||"")}</span>
-    <span class="mini">${esc(v.note||"")}</span>
-    <span class="spacer" style="flex:1"></span>
-    ${canEdit()?`<button class="btn-line btn-sm" onclick="rollbackVersion(${v.id})">↩ 回滚</button>`:""}
-  </div>`).join("");
-}
-async function rollbackVersion(vid){
-  if(!state.currentScheme||!state.currentScheme.id) return;
-  if(!canEdit()){ toast("无权限"); return; }
-  if(!confirm("确认回滚到该版本？")) return;
-  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/rollback",{version_id:vid});
-  if(res.ok){ toast("已回滚"); await openScheme(state.currentScheme.id); } else toast("回滚失败："+(data&&data.error||res.status));
-}
-async function exportScheme(){
-  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
-  if(!canEdit()){ toast("无权限"); return; }
-  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/export");
-  if(res.ok){ toast("已导出并提交 git："+(data.git||"")); } else toast("导出失败："+(data&&data.error||res.status));
-}
-async function pullScheme(){
-  if(!state.currentScheme||!state.currentScheme.id){ toast("未选中方案"); return; }
-  if(!canEdit()){ toast("无权限"); return; }
-  const {res,data}=await api("POST","/api/schemes/"+state.currentScheme.id+"/pull");
-  if(res.ok){ toast("已拉取："+String(data.output||"").slice(0,80)); await openScheme(state.currentScheme.id); }
-  else toast("拉取失败："+(data&&data.error||res.status));
-}
-async function loadOpLogs(){
-  const el=document.getElementById("opLogList");
-  try{
-    const {res,data}=await api("GET","/api/operation-logs");
-    if(!res.ok){ el.innerHTML=`<div class="mini">日志加载失败</div>`; return; }
-    if(!data.length){ el.innerHTML=`<div class="mini">暂无操作日志。</div>`; return; }
-    let h=`<table class="logtbl"><thead><tr><th>时间</th><th>用户</th><th>动作</th><th>对象</th><th>详情</th></tr></thead><tbody>`;
-    data.slice(0,100).forEach(l=>{
-      h+=`<tr><td>${esc(l.created_at||"")}</td><td>${esc(l.user_id||"")}</td><td>${esc(l.action||"")}</td>
-        <td>${esc((l.target_type||"")+"#"+(l.target_id||""))}</td><td class="mini">${esc(l.detail||"")}</td></tr>`;
-    });
-    h+=`</tbody></table>`;
-    el.innerHTML=h;
-  }catch(e){}
-}
-// 用户管理（admin/owner 可见）
-async function loadUsers(){
-  const el=document.getElementById("userTableBody"); if(!el) return;
-  const {res,data}=await api("GET","/api/users");
-  if(!res.ok){ el.innerHTML=`<tr><td colspan="4">加载失败</td></tr>`; return; }
-  el.innerHTML=data.map(u=>`<tr>
-    <td>${esc(u.display_name||u.username)}<br><span class="mini">${esc(u.username)}</span></td>
-    <td>${roleLabel(u.role)}</td>
-    <td>${esc(u.sub_tier||"-")}</td>
-    <td>${canOwner()?`<select data-uid="${u.id}" onchange="changeRole(${u.id},this.value)">${["viewer","editor","admin","owner"].map(r=>`<option ${u.role===r?"selected":""}>${r}</option>`).join("")}</select>`:roleLabel(u.role)}</td>
-  </tr>`).join("");
-}
-function renderUserMgmt(){
-  const card=document.getElementById("userMgmt");
-  if(!canAdmin()){ card.style.display="none"; return; }
-  card.style.display="block";
-  if(!document.getElementById("userTableBody")){
-    card.innerHTML=`<h3>👥 用户管理</h3>
-      <div class="inline-form">
-        <div class="field"><label>新用户名</label><input id="nuUser" placeholder="username"></div>
-        <div class="field"><label>密码</label><input id="nuPass" type="password" placeholder="password"></div>
-        <div class="field"><label>显示名</label><input id="nuName" placeholder="显示名"></div>
-        <div class="field"><label>角色</label><select id="nuRole"><option>viewer</option><option>editor</option><option>admin</option><option>owner</option></select></div>
-        <button class="btn-primary btn-sm" id="nuAdd">＋ 新建用户</button>
+          <div id="alertList"></div>
+        </div>
       </div>
-      <table class="logtbl"><thead><tr><th>用户</th><th>角色</th><th>套餐</th><th>操作</th></tr></thead><tbody id="userTableBody"></tbody></table>`;
-    document.getElementById("nuAdd").onclick=addUser;
-  }
-  loadUsers();
-}
-async function addUser(){
-  if(!canAdmin()){ toast("无权限"); return; }
-  const username=document.getElementById("nuUser").value.trim();
-  const password=document.getElementById("nuPass").value;
-  const display_name=document.getElementById("nuName").value.trim();
-  const role=document.getElementById("nuRole").value;
-  if(!username||!password){ toast("请填写用户名和密码"); return; }
-  const {res,data}=await api("POST","/api/users",{username,password,display_name,role});
-  if(res.ok){ toast("已新建用户"); document.getElementById("nuUser").value=""; document.getElementById("nuPass").value=""; document.getElementById("nuName").value=""; loadUsers(); }
-  else toast("新建失败："+(data&&data.error||res.status));
-}
-async function changeRole(id,role){
-  if(!canOwner()){ toast("仅拥有者可修改他人角色"); await loadUsers(); return; }
-  const {res,data}=await api("PUT","/api/users/"+id,{role});
-  if(res.ok){ toast("已更新角色"); } else { toast("更新失败："+(data&&data.error||res.status)); await loadUsers(); }
-}
-function renderEditorButtons(){
-  const editable=canEdit();
-  ["btnSaveScheme","btnSnapScheme","btnPinScheme","btnDelScheme","btnExportScheme","btnPullScheme","btnNewScheme"].forEach(id=>{
-    const b=document.getElementById(id); if(b) b.disabled=!editable;
-  });
-  const applyB=document.getElementById("btnApplyScheme"); if(applyB) applyB.disabled=!isLoggedIn();
-}
+    </section>
 
-// ---------- 绑定 ----------
-document.getElementById("btnAdd").onclick=openAdd;
-document.getElementById("btnRescore").onclick=rescoreAll;
-document.getElementById("btnExport").onclick=exportJSON;
-document.getElementById("formCancel").onclick=()=>document.getElementById("formModal").classList.remove("open");
-document.getElementById("formSave").onclick=saveForm;
-document.getElementById("detailClose").onclick=()=>document.getElementById("detailModal").classList.remove("open");
-document.getElementById("btnCompare").onclick=openCompare;
-document.getElementById("compareClose").onclick=()=>document.getElementById("compareModal").classList.remove("open");
-document.getElementById("btnFilter").onclick=load;
-document.getElementById("btnReset").onclick=()=>{
-  document.getElementById("fStyle").value="";document.getElementById("fIndustry").value="";
-  document.getElementById("fMin").value="";load();};
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
-document.getElementById("btnAddAlert").onclick=addAlert;
-document.getElementById("btnSavePort").onclick=savePortfolio;
-document.getElementById("btnRefreshReview").onclick=loadReview;
-document.querySelectorAll("[data-ptype]").forEach(b=>b.onclick=()=>loadPortfolio(b.dataset.ptype));
+    <!-- 组合推荐 -->
+    <section class="panel" id="panel-port">
+      <div class="container">
+        <div class="note">💼 基于当前评分快照生成三类组合（聚焦 AI 产业与护城河）。配置视图、风险等级、最大回撤<b>均为模型推断</b>，非收益承诺；不做技术分析、不自动下单。</div>
+        <div class="toolbar" style="border-radius:12px 12px 0 0">
+          <button class="btn-line" data-ptype="robust">🛡 稳健型</button>
+          <button class="btn-line" data-ptype="growth">🚀 成长型</button>
+          <button class="btn-line" data-ptype="aggressive">⚡ 激进型</button>
+          <button class="btn-primary btn-sm" id="btnSavePort" style="display:none">💾 保存该组合</button>
+        </div>
+        <div id="portBody" class="container" style="padding-top:14px"></div>
+      </div>
+    </section>
 
-// 新增模块绑定
-document.getElementById("btnNewScheme").onclick=newScheme;
-document.getElementById("btnSaveScheme").onclick=saveScheme;
-document.getElementById("btnSnapScheme").onclick=snapshotScheme;
-document.getElementById("btnApplyScheme").onclick=applyScheme;
-document.getElementById("btnPinScheme").onclick=()=>pinScheme(!(state.currentScheme&&state.currentScheme.is_pinned));
-document.getElementById("btnDelScheme").onclick=deleteScheme;
-document.getElementById("btnExportScheme").onclick=exportScheme;
-document.getElementById("btnPullScheme").onclick=pullScheme;
-document.getElementById("catSearch").oninput=renderCatalog;
-document.getElementById("loginClose").onclick=closeLogin;
-document.getElementById("loginBtn").onclick=doLogin;
-document.getElementById("licBtn").onclick=activateLicense;
-document.getElementById("btnAccActivate").onclick=activateFromAccount;
+    <!-- 每日复盘 -->
+    <section class="panel" id="panel-review">
+      <div class="container">
+        <div class="note">📅 买点/回避信号基于<b>主力长期趋势+护城河+评分</b>推断（不做技术分析），热点/轮动/明日重点均为<b>基于快照的推断</b>，非实时行情决策。</div>
+        <button class="btn-line btn-sm" id="btnRefreshReview">🔄 刷新复盘</button>
+        <div id="reviewBody" style="margin-top:12px"></div>
+      </div>
+    </section>
 
-renderUserBox();
-restoreSession();
+    <!-- 新手术语 -->
+    <section class="panel" id="panel-gloss">
+      <div class="container">
+        <div class="card">
+          <h3>📖 新手术语速查（小白必看）</h3>
+          <dl class="gloss">
+            <dt>五维雪花图</dt><dd>把一只股票的 基本面/估值/成长/资金/安全 五个维度画成一朵"雪花"（借鉴国际知名产品 Simply Wall St）。<b>雪花越大越圆润 = 五维越均衡越优秀</b>；某个角凹进去 = 该维度偏弱。绿色=优秀、蓝色=良好、琥珀=一般、红色=偏弱。列表页每行有迷你雪花，点击可看大图；勾选 2-3 只可叠加对比。</dd>
+            <dt>ROE（净资产收益率）</dt><dd>公司用股东的钱赚钱的能力。&gt;15% 算优秀，越高越好。</dd>
+            <dt>ROA（总资产收益率）</dt><dd>用全部资产赚钱的能力。&gt;8% 较健康。</dd>
+            <dt>PE（市盈率）</dt><dd>股价 ÷ 每股盈利。低于行业均值通常更便宜，但过低可能隐含风险。</dd>
+            <dt>PB（市净率）</dt><dd>股价 ÷ 每股净资产。≤3 一般视为估值合理。</dd>
+            <dt>PEG</dt><dd>PE ÷ 利润增速。&lt;1.5 以内较安全，越低越好。</dd>
+            <dt>EV/EBITDA</dt><dd>企业价值 ÷ 息税折旧前利润。≤15 通常合理。</dd>
+            <dt>安全边际</dt><dd>估算内在价值高于当前价的幅度。&gt;30% 护城河更厚。</dd>
+            <dt>自由现金流</dt><dd>公司真金白银剩下来的钱。为正才健康，能分红/扩张。</dd>
+            <dt>资产负债率</dt><dd>借钱占总资产比例。制造&lt;60%、科技&lt;50% 较安全；金融另算。</dd>
+            <dt>护城河</dt><dd>竞争对手难以复制的优势（品牌/牌照/网络效应）。明显 &gt; 强 &gt; 中等 &gt; 弱。</dd>
+            <dt>MACD / KDJ</dt><dd>技术指标。本产品明确"不做技术分析"，这些字段仅作展示，不计入综合评分；买卖决策请以护城河与主力长期趋势为准。</dd>
+            <dt>北向资金 / 主力资金</dt><dd>外资与机构大单流向。净流入通常偏多，净流出偏空。</dd>
+            <dt>商誉占比</dt><dd>并购溢价占净资产比。&gt;40% 减值风险高，是一大雷区。</dd>
+            <dt>质押比例</dt><dd>大股东把股票押给券商借钱的比例。&gt;30% 需警惕，&gt;50% 高风险。</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
 
-load();
-</script>
+    <!-- 筛选方案 -->
+    <section class="panel" id="panel-scheme">
+      <div class="container">
+        <div class="note">🔧 <b>数据驱动筛选方案</b>：左侧点选条件目录 → 中部编辑/保存/应用方案 → 右侧查看版本历史与操作日志。所有写操作需登录；权限 owner&gt;admin&gt;editor&gt;viewer，付费条件需激活授权码 <code>ZOE-PREMIUM-xxx</code> 解锁。</div>
+        <div class="workbench">
+          <div class="segmented" role="tablist" aria-label="方案视图切换">
+            <button data-pane="catalog">条件目录</button>
+            <button data-pane="editor" class="is-active">方案编辑</button>
+            <button data-pane="history">版本/日志</button>
+          </div>
+
+          <!-- 目录 -->
+          <div class="wb-pane" data-pane="catalog">
+            <div class="toolbar" style="border-radius:12px 12px 0 0">
+              <input id="catSearch" placeholder="搜索条件名…" style="flex:1">
+            </div>
+            <div id="catalogBody" class="pane-scroll"></div>
+          </div>
+
+          <!-- 编辑 -->
+          <div class="wb-pane is-shown" data-pane="editor">
+            <div class="toolbar" style="border-radius:12px 12px 0 0;justify-content:space-between">
+              <b>方案列表</b>
+              <button class="btn-primary btn-sm" id="btnNewScheme">＋ 新建方案</button>
+            </div>
+            <div id="schemeList" class="pane-scroll" style="max-height:26vh"></div>
+            <div class="pane-scroll">
+              <div class="inline-form">
+                <div class="field" style="flex:1"><label>方案名</label><input id="schemeName" placeholder="如：低估值高ROE"></div>
+                <div class="field" style="flex:2"><label>描述</label><input id="schemeDesc" placeholder="可选"></div>
+                <div class="field chk"><input type="checkbox" id="schemeShared"><label for="schemeShared">共享</label></div>
+              </div>
+              <div class="grp"><h3>当前方案条件</h3><div id="condList"></div></div>
+              <div class="toolbar" style="border-radius:10px;position:sticky;bottom:0;background:var(--bg-surface);flex-wrap:wrap">
+                <button class="btn-primary btn-sm" id="btnSaveScheme">💾 保存</button>
+                <button class="btn-line btn-sm" id="btnSnapScheme">📸 快照</button>
+                <button class="btn-line btn-sm" id="btnApplyScheme">▶ 应用</button>
+                <button class="btn-line btn-sm" id="btnPinScheme">⭐ 置顶</button>
+                <button class="btn-danger btn-sm" id="btnDelScheme">🗑 删除</button>
+                <button class="btn-line btn-sm" id="btnExportScheme">📤 导出git</button>
+                <button class="btn-line btn-sm" id="btnPullScheme">🔄 下拉刷新</button>
+              </div>
+              <div id="screenResult" class="pane-scroll"></div>
+            </div>
+          </div>
+
+          <!-- 历史 -->
+          <div class="wb-pane" data-pane="history">
+            <div class="card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--line)">
+              <h3>🕑 版本历史</h3><div id="versionList"></div>
+            </div>
+            <div class="card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--line)">
+              <h3>📜 操作日志</h3><div id="opLogList" class="pane-scroll" style="max-height:30vh"></div>
+            </div>
+            <div class="card" id="userMgmt" style="margin:0;border-radius:0;border:none;display:none"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 订阅 / 账户 -->
+    <section class="panel" id="panel-account">
+      <div class="container">
+        <div class="note">💳 <b>订阅 / 账户</b>：订阅后可解锁全部高级筛选条件。🎁 <b>新用户前 3 个月免费</b>试用全功能（Stripe 90 天试用期，期间不扣费）。也可使用离线激活码 <code>ZOE-PREMIUM-xxx</code> 解锁，两种途径效果一致。</div>
+        <div class="card">
+          <h3>当前订阅状态</h3>
+          <div class="kv" id="billingStatus">
+            <div><b id="billingTier">—</b><span>当前版本</span></div>
+            <div><b id="billingExpiry">—</b><span>到期日</span></div>
+            <div><b id="billingMode">—</b><span>计费模式</span></div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn-primary" id="btnCheckout">💳 前往订阅</button>
+            <span class="mini" id="checkoutHint"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>离线激活码</h3>
+          <div class="inline-form" style="margin-bottom:0">
+            <div class="field" style="flex:1;min-width:200px"><label>激活授权码</label><input id="accLicKey" placeholder="ZOE-PREMIUM-xxxx"></div>
+            <button class="btn-line" id="btnAccActivate">激活授权</button>
+          </div>
+          <div class="mini" style="margin-top:8px">说明：授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁全部高级筛选条件；订阅后亦可获得同等授权。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 价格 / 订阅 -->
+    <section class="panel" id="panel-pricing">
+      <div class="container">
+        <div class="risk-disclaimer" style="margin-bottom:14px">
+          <b>投资研究工具 / 数据可视化</b>　<span class="sep">——</span>　只做筛选、数据、解读，<b>不荐股 · 不代操 · 不承诺收益</b>
+        </div>
+        <div class="card" style="text-align:center">
+          <h3 style="margin-bottom:6px">🎁 新用户前 3 个月免费，全功能畅用</h3>
+          <p id="trialLabel" style="margin:0;color:var(--text-muted);font-size:13px">订阅会员版 / 高阶版即享 90 天免费试用期（Stripe 自动设置），期间不扣费；试用结束后按所选档位自动续费，随时可在 Stripe 取消。</p>
+        </div>
+        <div class="pricing-grid" id="pricingGrid">
+          <div class="plan">
+            <div class="plan-name">免费版</div>
+            <div class="plan-price">¥0 <span class="plan-period">永久免费</span></div>
+            <div class="plan-tag">先体验，再决定</div>
+            <ul class="plan-feat">
+              <li>基础条件筛选（基本面 / 估值 / 成长 / 资金 / 风险）</li>
+              <li>每日限次查看五维雪花图</li>
+              <li>AI 产业聚焦基础视图</li>
+              <li>组合推荐（基于评分快照）</li>
+            </ul>
+            <button class="btn-line plan-btn" onclick="switchTab('work')">去体验 →</button>
+          </div>
+          <div class="plan plan-hot">
+            <div class="plan-ribbon">主推</div>
+            <div class="plan-name">会员版</div>
+            <div class="plan-price" id="planMemberPrice">¥19/月 或 ¥199/年</div>
+            <div class="plan-tag">个人投资者首选</div>
+            <ul class="plan-feat">
+              <li>无限查看五维雪花大图 + 多只对比</li>
+              <li>真实主力资金流 / 北向资金</li>
+              <li>AI 产业聚焦深度解读（护城河 / 长期逻辑）</li>
+              <li>价格 / 评分 / 风险 三维预警</li>
+              <li>多只组合叠加对比</li>
+              <li>优先体验新功能</li>
+            </ul>
+            <button class="btn-primary plan-btn" onclick="openCheckout('member_monthly')">💳 订阅会员版（前3月免费）</button>
+          </div>
+          <div class="plan">
+            <div class="plan-name">高阶版</div>
+            <div class="plan-price" id="planProPrice">¥49/月 或 ¥499/年</div>
+            <div class="plan-tag">进阶研究 / 多市场</div>
+            <ul class="plan-feat">
+              <li>含会员版全部功能</li>
+              <li>策略回测（历史胜率 / 回撤）</li>
+              <li>多市场覆盖（A股 / 港股 / A+H）</li>
+              <li>数据导出 / API 接入</li>
+              <li>专属答疑</li>
+            </ul>
+            <button class="btn-primary plan-btn" onclick="openCheckout('pro_monthly')">💳 订阅高阶版（前3月免费）</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h3>📜 免责声明（务必阅读）</h3>
+          <div class="disclaimer" id="disclaimerBox">
+            <p><b>1. 产品定位。</b>ZOE 股票筛选器是一个<b>投资研究工具 / 数据可视化</b>平台，仅提供股票数据的<b>筛选、展示与解读</b>功能。我们<b>不提供个性化投资建议、不代客理财、不承诺任何收益</b>。</p>
+            <p><b>2. 非投资建议。</b>本平台所有评分、评级、五维雪花图、组合推荐、买点 / 卖点信号均为基于历史数据与既定模型的<b>客观计算与推断</b>，不构成任何证券买卖建议，也不构成对特定投资者的针对性意见。</p>
+            <p><b>3. 数据与延迟。</b>数据来源于公开行情接口，可能存在延迟、缺口或错误；实时性以行情源为准。因数据偏差导致的任何决策损失，本平台不承担责任。</p>
+            <p><b>4. 风险自担。</b>证券市场有风险，入市需谨慎。任何投资行为均由您本人独立决策并承担全部盈亏后果。过往表现不代表未来收益。</p>
+            <p><b>5. 无收益承诺。</b>本平台不保证、不暗示、不承诺任何收益率或保本。任何"稳赚""必涨"类表述均非本平台观点。</p>
+            <p><b>6. 责任限制。</b>在法律允许范围内，本平台对因使用（或无法使用）本服务导致的直接或间接损失不承担责任。如您所在地区对投资工具另有监管规定，请以当地法规为准。</p>
+            <p class="mini" style="margin-top:8px">完整版免责声明见 <code>docs/免责声明.html</code>。本声明随产品迭代可能更新，请以页面最新版本为准。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ 移动端底部主导航（<1024px 显示） ============
+       4 个高频目的地常驻，其余入口收进「更多」抽屉。 -->
+  <nav class="bottom-nav" aria-label="移动端主导航">
+    <button class="bnav-item is-active" data-tab="work"><span class="bn-ico">📊</span><span class="bn-label">工作台</span></button>
+    <button class="bnav-item" data-tab="alert"><span class="bn-ico">🔔</span><span class="bn-label">预警</span></button>
+    <button class="bnav-item" data-tab="port"><span class="bn-ico">💼</span><span class="bn-label">组合</span></button>
+    <button class="bnav-item" data-tab="review"><span class="bn-ico">📅</span><span class="bn-label">复盘</span></button>
+    <button class="bnav-item" data-drawer="navDrawer" aria-label="更多导航"><span class="bn-ico">☰</span><span class="bn-label">更多</span></button>
+  </nav>
+
+  <!-- ============ 登录 弹窗 ============ -->
+  <div class="modal" id="loginModal">
+    <div class="sheet sheet-sm">
+      <div class="sheet-head"><h2>登录</h2><div class="spacer"></div><button class="btn-line btn-sm" data-close>关闭</button></div>
+      <div class="sheet-body">
+        <div class="field"><label>用户名</label><input id="loginUser" placeholder="用户名"></div>
+        <div class="field"><label>密码</label><input id="loginPass" type="password" placeholder="密码"></div>
+        <button class="btn-primary" id="loginBtn" style="margin-top:6px">登录</button>
+        <div class="note" style="margin-top:12px">离线测试授权码前缀 <code>ZOE-PREMIUM-</code> 可解锁付费条件。</div>
+        <div class="field" style="margin-top:4px"><label>激活授权码（可选）</label><input id="licKey" placeholder="ZOE-PREMIUM-xxxx"></div>
+        <button class="btn-line btn-sm" id="licBtn">激活授权</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 新增/编辑 弹窗 ============ -->
+  <div class="modal" id="formModal">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2 id="formTitle">新增股票</h2><div class="spacer"></div>
+        <button class="btn-line btn-sm" data-close>取消</button>
+        <button class="btn-primary btn-sm" id="formSave">保存并评分</button>
+      </div>
+      <div class="sheet-body" id="formBody"></div>
+    </div>
+  </div>
+
+  <!-- ============ 详情 弹窗 ============ -->
+  <div class="modal" id="detailModal">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2 id="detailTitle">股票详情</h2><div class="spacer"></div>
+        <button class="btn-line btn-sm" data-close>关闭</button>
+      </div>
+      <div class="sheet-body detail" id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- ============ 雪花对比 弹窗 ============ -->
+  <div class="modal" id="compareModal">
+    <div class="sheet sheet-md">
+      <div class="sheet-head">
+        <h2>⚖ 五维雪花对比</h2><div class="spacer"></div>
+        <button class="btn-line btn-sm" data-close>关闭</button>
+      </div>
+      <div class="sheet-body" id="compareBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ============ 脚本（依赖顺序加载，全局函数共享） ============ -->
+  <script src="assets/js/core/theme.js"></script>
+  <script src="assets/js/core/dom.js"></script>
+  <script src="assets/js/core/state.js"></script>
+  <script src="assets/js/core/api.js"></script>
+  <script src="assets/js/core/responsive.js"></script>
+  <script src="assets/js/components/modal.js"></script>
+  <script src="assets/js/components/states.js"></script>
+  <script src="assets/js/components/datatable.js"></script>
+  <script src="assets/js/components/snowflake.js"></script>
+  <script src="assets/js/views/work.js"></script>
+  <script src="assets/js/views/alerts.js"></script>
+  <script src="assets/js/views/portfolio.js"></script>
+  <script src="assets/js/views/review.js"></script>
+  <script src="assets/js/views/scheme.js"></script>
+  <script src="assets/js/views/account.js"></script>
+  <script src="assets/js/views/auth.js"></script>
+  <script src="assets/js/app.js"></script>
 </body>
 </html>

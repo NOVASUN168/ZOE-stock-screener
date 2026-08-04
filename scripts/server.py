@@ -68,6 +68,46 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return {}
 
+    def _serve_asset(self, path):
+        """安全托管 /assets/* 下的静态文件（防目录穿越）。"""
+        ASSET_ROOT = os.path.normpath(os.path.join(HERE, "ui", "assets"))
+        rel = path[len("/assets/"):].replace("\\", "/")
+        if ".." in rel or rel.startswith("/"):
+            self._send(403, {"error": "forbidden"})
+            return
+        full = os.path.normpath(os.path.join(ASSET_ROOT, rel))
+        if not full.startswith(ASSET_ROOT) or not os.path.isfile(full):
+            self._send(404, {"error": "not found"})
+            return
+        mime = {
+            ".css": "text/css; charset=utf-8",
+            ".js": "application/javascript; charset=utf-8",
+            ".html": "text/html; charset=utf-8",
+            ".json": "application/json; charset=utf-8",
+            ".svg": "image/svg+xml",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".ico": "image/x-icon",
+            ".woff": "font/woff",
+            ".woff2": "font/woff2",
+            ".ttf": "font/ttf",
+        }.get(os.path.splitext(full)[1].lower(), "application/octet-stream")
+        try:
+            with open(full, "rb") as f:
+                data = f.read()
+        except OSError:
+            self._send(500, {"error": "read error"})
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "public, max-age=300")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
         u = urlparse(self.path)
         path = u.path
@@ -80,6 +120,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(code, obj)
                 return
             # --------------------------------
+            if path == "/favicon.ico":
+                self._send(204, None)
+                return
             if path == "/" or path == "/index.html":
                 if os.path.exists(UI_PATH):
                     with open(UI_PATH, "rb") as f:
@@ -87,6 +130,10 @@ class Handler(BaseHTTPRequestHandler):
                         self.wfile.write(f.read())
                 else:
                     self._send(404, {"error": "UI 未找到"})
+                return
+            # ---------- 静态资源（CSS / JS / 图片 / 字体） ----------
+            if path.startswith("/assets/"):
+                self._serve_asset(path)
                 return
             if path == "/api/stocks":
                 style = q.get("style", [None])[0]
