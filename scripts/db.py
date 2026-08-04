@@ -149,6 +149,12 @@ def _init_schema(conn):
         user_id INTEGER, action TEXT, target_type TEXT, target_id INTEGER,
         detail TEXT, created_at TEXT
     )""")
+    # 全局配置（key-value 存储；auth_secret 等敏感值由运行时写入，不进种子）
+    conn.execute("""CREATE TABLE IF NOT EXISTS system_config (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TEXT
+    )""")
     for idx in (
         "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
         "CREATE INDEX IF NOT EXISTS idx_filter_catalog_key ON filter_catalog(key)",
