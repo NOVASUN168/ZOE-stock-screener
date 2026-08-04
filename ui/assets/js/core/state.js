@@ -19,6 +19,9 @@ const state = {
   conditions: [],        // 编辑器条件 [{catalog_key,operator,value,value2,enabled,_meta}]
   dirty: false,
 };
+// 顶层 const 不会挂到 window（经典脚本的词法全局作用域），
+// 显式挂载一份引用，便于调试台排查与自动化断言。
+window.state = state;
 
 // ---------- 凭证 ----------
 function getToken() { return localStorage.getItem('zoe_token'); }

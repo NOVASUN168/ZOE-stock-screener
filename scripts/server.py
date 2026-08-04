@@ -339,6 +339,32 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def _autoseed_if_empty(db_path):
+    """数据库为空（stocks 表 0 行）时自动灌入初始种子数据。
+    用于 Render 等首次部署场景；本地已有股票数据的库不会触发，避免覆盖。"""
+    try:
+        import init_db
+    except Exception as e:
+        print(f"⚠️ 自动播种跳过：无法导入 init_db（{e}）")
+        return
+    conn = db.connect(db_path)
+    try:
+        n = conn.execute("SELECT COUNT(*) FROM stocks").fetchone()[0]
+        if n and n > 0:
+            print(f"数据库已有 {n} 只股票，跳过自动播种。")
+            return
+        print("检测到空数据库，自动播种初始数据（15 只 AI 股 + 筛选条件目录）...")
+        init_db.seed(conn)
+        init_db.seed_catalog_and_users(conn)
+        init_db.init_config(conn)
+        conn.commit()
+        print("✅ 自动播种完成，手机端现在能看到初始数据。")
+    except Exception as e:
+        print(f"⚠️ 自动播种失败（不影响启动）：{e}")
+    finally:
+        conn.close()
+
+
 def main():
     import argparse
     p = argparse.ArgumentParser()
@@ -348,6 +374,7 @@ def main():
     a = p.parse_args()
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     srv.db_path = a.db or db.DEFAULT_DB
+    _autoseed_if_empty(srv.db_path)
     print(f"stock-screener 已启动 → http://{a.host}:{a.port}/")
     print(f"SQLite 数据库：{srv.db_path}")
     print("按 Ctrl+C 停止。")

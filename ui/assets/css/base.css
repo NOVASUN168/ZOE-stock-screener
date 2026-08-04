@@ -173,11 +173,13 @@ button:disabled { cursor: not-allowed; }
 .mkt-down { color: var(--mkt-down); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .mkt-flat { color: var(--mkt-flat); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 
-/* ---------- 显隐工具（配合断点） ---------- */
-.only-mobile  { display: none; }
-.only-desktop { display: none; }
-@media (max-width: 1023px) { .only-mobile  { display: initial; } }
-@media (min-width: 1024px) { .only-desktop { display: initial; } }
+/* ---------- 显隐工具（配合断点） ----------
+   只负责「隐藏」，不负责「显示」。原因有二：
+   1) display:initial 会算成 inline，破坏 .dcard-list(flex) / .table-scroll(block) 的原生布局；
+   2) 组件样式（components.css）在本文件之后加载，同级特异性下会反向覆盖显示状态。
+   因此改为单向 hide + !important，元素在可见断点保留各自的原生 display。 */
+@media (max-width: 1023px) { .only-desktop { display: none !important; } }
+@media (min-width: 1024px) { .only-mobile  { display: none !important; } }
 
 /* flex 占位 */
 .spacer { flex: 1 1 auto; min-width: 0; }

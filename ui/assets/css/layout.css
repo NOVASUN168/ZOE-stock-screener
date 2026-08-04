@@ -99,11 +99,26 @@
   align-items: center;
   gap: var(--sp-2);
   flex: none;
+  min-width: 0;
 }
-/* 手机上主操作收进抽屉，仅保留主题切换与用户 */
+/* 手机上主操作收进抽屉，仅保留配色 / 主题两个图标按钮 */
 .header-actions .hide-on-mobile { display: none; }
+/* 用户胶囊含「昵称·角色·订阅」长文本，390px 顶栏放不下，
+   移动端整体收进抽屉的 #mobileUserSlot（同一份 renderUserBox 渲染） */
+.header-actions .userbox { display: none; }
 @media (min-width: 1024px) {
   .header-actions .hide-on-mobile { display: inline-flex; }
+  .header-actions .userbox { display: flex; }
+}
+
+/* 移动端触控目标：顶栏 / 抽屉 / 卡片内按钮统一 ≥44px（WCAG 2.5.5） */
+@media (max-width: 1023px) {
+  .app-header .btn-sm,
+  .app-header .icon-btn,
+  .drawer .btn-sm,
+  .dcard-foot .btn-sm,
+  .dcard-foot .btn-line,
+  .dcard-foot .btn-primary { min-height: var(--tap-min); }
 }
 
 /* 汉堡按钮：仅移动端 */
