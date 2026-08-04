@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ZOE 股票筛选器 · 手机版</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1f2430; --sub:#7a8395; --line:#e7eaf0;
+    --brand:#2f6bff; --brand-d:#1d4fd6; --red:#e23b3b; --green:#1aa260; --amber:#f59e0b;
+    --chip:#eef3ff; --chip-ink:#2f6bff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;padding-bottom:64px}
+  header{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);padding:12px 14px 10px}
+  .title{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .title small{font-size:12px;font-weight:500;color:var(--sub)}
+  .bar{display:flex;gap:8px;margin-top:10px}
+  .search{flex:1;display:flex;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .search input{border:0;background:transparent;outline:none;flex:1;font-size:15px;color:var(--ink)}
+  .btn-filter{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:0 14px;font-size:14px;font-weight:600}
+  .btn-filter:active{background:var(--brand-d)}
+  .count{font-size:12px;color:var(--sub);padding:8px 14px 2px}
+
+  .tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;background:#fff;border-top:1px solid var(--line)}
+  .tab{flex:1;text-align:center;padding:8px 0 6px;font-size:11px;color:var(--sub)}
+  .tab.active{color:var(--brand);font-weight:700}
+  .tab .ic{font-size:20px;display:block;line-height:1.1}
+
+  .list{padding:8px 12px;display:flex;flex-direction:column;gap:10px}
+  .stock{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .stock:active{background:#fafbff}
+  .stock .main{flex:1;min-width:0}
+  .stock .nm{font-weight:700;font-size:16px}
+  .stock .meta{color:var(--sub);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .score{width:54px;text-align:center;flex-shrink:0}
+  .score .n{font-size:22px;font-weight:800;line-height:1}
+  .score .st{font-size:11px;color:var(--sub);margin-top:2px}
+  .risk-tag{display:inline-block;font-size:10px;background:#fdeaea;color:var(--red);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+
+  .drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;display:none}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:86%;max-width:380px;background:#fff;z-index:50;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column}
+  .drawer.open{transform:translateX(0)}
+  .drawer h3{margin:0;padding:14px;border-bottom:1px solid var(--line);font-size:16px;display:flex;justify-content:space-between;align-items:center}
+  .drawer .body{flex:1;overflow:auto;padding:8px 14px 14px}
+  .grp{margin-top:12px}
+  .grp .gt{font-size:13px;font-weight:700;color:var(--brand);margin:4px 0 6px}
+  .cond{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .cond .cn{width:46%;font-size:13px;color:var(--ink)}
+  .cond input,.cond select{flex:1;min-width:90px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px;outline:none}
+  .cond .op{font-size:12px;color:var(--sub);min-width:30px}
+  .drawer .foot{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px}
+  .drawer .foot button{flex:1;border:0;border-radius:10px;padding:11px;font-size:15px;font-weight:700}
+  .apply{background:var(--brand);color:#fff}
+  .reset{background:var(--bg);color:var(--ink)}
+
+  .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;display:none;align-items:flex-end;justify-content:center}
+  .modal{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px 26px}
+  .modal h2{margin:0 0 2px;font-size:20px}
+  .modal .sub{color:var(--sub);font-size:13px;margin-bottom:12px}
+  .close{float:right;font-size:22px;color:var(--sub);background:none;border:0;margin-top:-4px}
+  .block{margin:14px 0}
+  .block .bt{font-size:13px;font-weight:700;color:var(--brand);margin-bottom:8px}
+  .dims{display:flex;gap:8px}
+  .dim{flex:1;text-align:center}
+  .dim .ring{width:62px;height:62px;margin:0 auto}
+  .dim .dl{font-size:11px;color:var(--sub);margin-top:3px}
+  .bars{display:flex;flex-direction:column;gap:7px}
+  .bar-row{display:flex;align-items:center;gap:8px;font-size:13px}
+  .bar-row .bl{width:54px;color:var(--sub)}
+  .bar-row .btrack{flex:1;height:8px;background:var(--bg);border-radius:5px;overflow:hidden}
+  .bar-row .bfill{height:100%;background:var(--brand);border-radius:5px}
+  .bar-row .bv{width:34px;text-align:right;font-weight:600}
+  .note{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink);margin-top:6px}
+  .reasons li{margin-bottom:5px;font-size:13px}
+  .insight .row{display:flex;justify-content:space-between;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+  .insight .row .v{font-weight:700}
+  .about{font-size:13px;color:var(--sub);line-height:1.7;padding:8px 4px}
+  .about b{color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="title">📊 ZOE 股票筛选器 <small>手机版 · 离线可用</small></div>
+  <div class="bar">
+    <label class="search">🔍<input id="q" placeholder="搜名称 / 代码 / 行业"></label>
+    <button class="btn-filter" id="openFilter">筛选</button>
+  </div>
+</header>
+<div class="count" id="count"></div>
+
+<!-- 筛选页 -->
+<div id="pageScreen" class="list"></div>
+
+<!-- 洞察页 -->
+<div id="pageInsight" class="insight list" style="display:none"></div>
+
+<!-- 关于页 -->
+<div id="pageAbout" class="about list" style="display:none">
+  <div class="block">
+    <p><b>这是什么？</b><br>这是 ZOE 股票筛选器的纯前端手机版。所有数据（15 只 AI 股 + 筛选规则）已内嵌在网页里，<b>无需后端服务器、无需联网验证</b>，手机打开链接即可筛选。</p>
+    <p><b>数据来源</b><br>内置为示例股票池（AI 产业聚焦），评分与筛选逻辑与原版后端完全一致（五维评分：基本面/估值/成长/资金/安全）。</p>
+    <p><b>与电脑版的区别</b><br>电脑版（需后端）支持自定义预警、组合保存等需登录的功能；本离线版聚焦核心：浏览、筛选、查看五维详情。如需完整体验，在电脑上打开带后端的版本。</p>
+    <p style="color:var(--amber)"><b>风险提示</b><br>所有评分与结论均为基于公开因子的<b>推断</b>，非投资建议，不承诺收益。</p>
+  </div>
+</div>
+
+<!-- 筛选抽屉 -->
+<div class="drawer-mask" id="mask"></div>
+<div class="drawer" id="drawer">
+  <h3>筛选条件 <button id="closeFilter" style="border:0;background:none;font-size:22px;color:var(--sub)">×</button></h3>
+  <div class="body" id="filterBody"></div>
+  <div class="foot">
+    <button class="reset" id="resetFilter">清空</button>
+    <button class="apply" id="applyFilter">应用筛选</button>
+  </div>
+</div>
+
+<!-- 详情弹窗 -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- 底部导航 -->
+<div class="tabs">
+  <div class="tab active" data-tab="screen"><span class="ic">🔎</span>筛选</div>
+  <div class="tab" data-tab="insight"><span class="ic">💡</span>洞察</div>
+  <div class="tab" data-tab="about"><span class="ic">ℹ️</span>关于</div>
+</div>
+
+<script src="seed-data.js"></script>
+<script>
+/* ============ 评分引擎（移植自 scripts/scoring.py） ============ */
+function _num(v){ if(v===null||v===undefined||v==='') return null; const n=Number(v); return isNaN(n)?null:n; }
+function _yn(v){ return ['1','true','True','是','1.0'].includes(String(v)); }
+function _half(maxp,val,hit,partial){ if(val===null||val===undefined||val==='') return (partial===undefined?maxp*0.5:partial); return hit?maxp:0; }
+function _txt(v){ return (v===null||v===undefined)?'':String(v); }
+
+function _fundamental(r){ let s=0;
+  const roe=_num(r.roe); s+=_half(8,roe,roe!==null&&roe>15);
+  if(roe!==null&&10<roe&&roe<=15)s+=4; else if(roe!==null&&0<roe&&roe<=10)s+=1.5;
+  const roa=_num(r.roa); s+=_half(5,roa,roa!==null&&roa>8);
+  if(roa!==null&&5<roa&&roa<=8)s+=2.5; else if(roa!==null&&0<roa&&roa<=5)s+=1;
+  const rg=_num(r.rev_growth_years); s+= (rg!==2&&rg!==1)?_half(5,rg,rg===3):(rg===2?3:1);
+  const ng=_num(r.netprofit_growth_years); s+= (ng!==2&&ng!==1)?_half(5,ng,ng===3):(ng===2?3:1);
+  s+=_half(4,r.fcf_positive,_yn(r.fcf_positive));
+  const dr=_num(r.debt_ratio); const st=_txt(r.sector_type);
+  if(dr===null)s+=4; else { if(st==='科技')s+= dr<50?8:(dr<65?4:0); else if(st==='金融')s+=4; else s+= dr<60?8:(dr<70?4:0); }
+  return Math.min(s,35);
+}
+function _valuation(r){ let s=0;
+  const pe=_num(r.pe), peAvg=_num(r.pe_industry_avg);
+  if(pe===null)s+=2.5; else if(peAvg!==null&&pe<peAvg)s+=5; else if(peAvg!==null&&pe<peAvg*1.2)s+=3;
+  const pb=_num(r.pb); if(pb===null)s+=2; else if(pb<=3)s+=4; else if(pb<=5)s+=2;
+  const peg=_num(r.peg); if(peg===null)s+=2.5; else if(peg<1)s+=5; else if(peg<1.5)s+=4; else if(peg<2)s+=2;
+  const ev=_num(r.ev_ebitda); if(ev===null)s+=1.5; else if(ev<=15)s+=3; else if(ev<=20)s+=1.5;
+  const sm=_num(r.safety_margin); if(sm===null)s+=1.5; else if(sm>=30)s+=3; else if(sm>=15)s+=1.5;
+  return Math.min(s,20);
+}
+function _growth(r){ let s=0;
+  s+=_half(4,r.rd_increase,_yn(r.rd_increase));
+  s+=_half(5,r.mkt_share_growth,_yn(r.mkt_share_growth));
+  s+={'大':4,'中':2,'小':0}[_txt(r.industry_space)]??2;
+  s+={'明显':8,'强':8,'中等':4,'弱':0,'无':0}[_txt(r.moat)]??4;
+  const pf=_num(r.profit_forecast_3y);
+  if(pf===null)s+=2; else if(pf>=15)s+=4; else if(pf>=8)s+=2; else if(pf>0)s+=1;
+  return Math.min(s,25);
+}
+function _capital(r){ let s=0;
+  s+={'流入':8,'流出':0,'持平':4}[_txt(r.main_force_trend)]??4;
+  s+={'增持':4,'持平':2,'减持':0}[_txt(r.northbound)]??2;
+  s+={'增仓':3,'持平':1.5,'减仓':0}[_txt(r.institution_change)]??1.5;
+  const ncf=_num(r.net_capital_flow); if(ncf!==null&&ncf>0)s+=2;
+  return Math.min(s,15);
+}
+function _risk(r){ let s=5;
+  if(_yn(r.financial_risk))s-=1; if(_yn(r.litigation))s-=1;
+  const pr=_num(r.pledge_ratio); if(pr!==null)s-= pr>50?1.5:(pr>30?0.5:0);
+  if(_yn(r.regulatory_penalty))s-=0.5;
+  const gr=_num(r.goodwill_ratio); if(gr!==null)s-= gr>40?1:(gr>20?0.5:0);
+  return Math.max(s,0);
+}
+const HARD=[['st_flag','ST股'],['delisting_risk','退市风险'],['fraud_flag','财务造假嫌疑'],['litigation','重大诉讼'],
+  ['consecutive_loss','连续亏损'],['major_holder_reduction','大股东减持'],['high_pledge','高质押'],
+  ['non_ai','非AI驱动'],['hotmoney_flag','游资主导']];
+function _hardExcluded(r){ const hits=[];
+  for(const [k,label] of HARD){ if(k==='non_ai'){ if(String(r.ai_driven)==='0')hits.push(label); }
+    else if(k==='litigation'||k==='high_pledge'){ if(_yn(r[k]))hits.push(label); }
+    else { if(_yn(r[k]))hits.push(label); } }
+  const gr=_num(r.goodwill_ratio); if(gr!==null&&gr>40)hits.push('商誉过高(>40%)');
+  return hits;
+}
+function _softRisks(r){ const f=[];
+  if(_yn(r.financial_risk))f.push('⚠️ 财务风险');
+  const pr=_num(r.pledge_ratio); if(pr!==null&&pr>30)f.push('⚠️ 质押 '+pr.toFixed(0)+'%');
+  if(_yn(r.regulatory_penalty))f.push('⚠️ 监管处罚');
+  const gr=_num(r.goodwill_ratio); if(gr!==null&&20<gr&&gr<=40)f.push('⚠️ 商誉 '+gr.toFixed(0)+'%');
+  return f;
+}
+function _rating(s){ if(s>=95)return['★★★★★','强烈推荐']; if(s>=90)return['★★★★☆','推荐']; if(s>=80)return['★★★★','关注']; if(s>=70)return['★★★','一般']; return['★★','不建议']; }
+function _dimLevel(p){ if(p>=80)return'优秀'; if(p>=60)return'良好'; if(p>=40)return'一般'; return'偏弱'; }
+function _snowflake(f,v,g,c,rk){ const d={
+  dim_fundamental:Math.round(f/35*100), dim_valuation:Math.round(v/20*100),
+  dim_growth:Math.round(g/25*100), dim_capital:Math.round(c/15*100), dim_safety:Math.round(rk/5*100)};
+  const L=[['dim_fundamental','基本面'],['dim_valuation','估值'],['dim_growth','成长'],['dim_capital','资金'],['dim_safety','安全']];
+  d.dim_summary=L.map(([k,lb])=>lb+_dimLevel(d[k])).join(' · '); return d;
+}
+function scoreStock(row){ row=Object.assign({},row);
+  const f=_fundamental(row),v=_valuation(row),g=_growth(row),c=_capital(row),rk=_risk(row);
+  const total=Math.round((f+v+g+c+rk)*10)/10; row=Object.assign(row,_snowflake(f,v,g,c,rk));
+  const hard=_hardExcluded(row), soft=_softRisks(row);
+  let [stars,label]=_rating(total);
+  if(hard.length){ stars='★★'; label='排除（硬过滤）'; row.total_score=Math.min(total,65); }
+  else row.total_score=total;
+  row.rating=label; row.recommend_index=stars;
+  row.risk_flags=(hard.concat(soft).length)?hard.concat(soft).join('; '):'无';
+  row.risks_text=(hard.concat(soft).length)?hard.concat(soft).join('；'):'暂无显著风险';
+  // 结论
+  const peg=_num(row.peg),pf=_num(row.profit_forecast_3y),peAvg=_num(row.pe_industry_avg),moat=_txt(row.moat);
+  row.reasonable_valuation=(peg!==null&&pf!==null)?('合理PE≈'+(peg*pf).toFixed(1)+'（PEG×三年利润增速，推断）'):
+    (peAvg!==null?('参考行业PE均值 '+peAvg.toFixed(1)+'（推断）'):'待补充估值数据（推断）');
+  row.suggested_position=total>=80?'核心配置':total>=70?'卫星配置':total>=60?'观察':'回避';
+  row.expected_hold=total>=80?'5年以上（长期持有）':'3年以上（长期持有）';
+  const comp=[]; if(['明显','强'].includes(moat))comp.push('护城河'+moat);
+  if(_yn(row.fcf_positive))comp.push('自由现金流转正');
+  const roe=_num(row.roe); if(roe&&roe>15)comp.push('ROE '+roe.toFixed(1)+'%');
+  if(_txt(row.main_force_trend)==='流入')comp.push('主力资金长期流入');
+  row.core_competence=comp.length?comp.join('、'):'待补充护城河分析';
+  const th=[]; if(_txt(row.industry_space)==='大')th.push('行业空间大');
+  if(_yn(row.mkt_share_growth))th.push('市占率持续提升，护城河正转化为份额');
+  if(pf!==null&&pf>=15)th.push('三年利润预期增速 '+pf.toFixed(1)+'%');
+  const mft=_txt(row.main_force_trend);
+  if(mft==='流入')th.push('大资金长期趋势向好'); else if(mft==='流出')th.push('大资金长期趋势偏弱，需观察'); else th.push('大资金趋势持平，待确认');
+  row.long_term_thesis=th.length?th.join('；'):'待补充产业与资金信号';
+  // 推荐理由
+  const rs=[]; if(roe!==null&&roe>15)rs.push('盈利能力强：ROE '+roe.toFixed(1)+'% 高于15%阈值');
+  if(peg!==null&&peg<1.5)rs.push('估值合理：PEG '+peg.toFixed(2)+'（<1.5）提供安全边际');
+  if(['明显','强'].includes(moat))rs.push('护城河'+moat+'：具备长期难以复制的竞争壁垒');
+  if(_yn(row.mkt_share_growth))rs.push('市占率持续提升，护城河正转化为市场份额');
+  if(pf!==null&&pf>=15)rs.push('成长预期高：未来三年利润预测增速 '+pf.toFixed(1)+'%');
+  if(mft==='流入')rs.push('主力资金长期趋势流入，大资金意图偏多');
+  row.recommend_reasons=rs.length?rs.slice(0,4).join(' | '):'综合因子得分中等，暂无单项突出优势，建议补充数据后重评';
+  return row;
+}
+function rescoreAll(rows){ return rows.map(scoreStock); }
+function screenByStyle(rows,style){ let out=rescoreAll(rows);
+  const key=r=>r.code||r.id||Math.random();
+  const ex=new Set(out.filter(r=>r.rating&&r.rating.includes('排除')).map(key));
+  out=out.filter(r=>!ex.has(key(r)));
+  if(style==='绩优'){ const pref=['核心基础','模型平台','AI革命','AI医药','AI','人工智能','半导体','芯片','机器人','医药','软件','云计算'];
+    out.sort((a,b)=>{ let x=a.total_score,y=b.total_score; if(pref.includes(_txt(a.ai_category)))x+=3; if(_txt(a.main_force_trend)==='流入')x+=2; if(pref.includes(_txt(b.ai_category)))y+=3; if(_txt(b.main_force_trend)==='流入')y+=2; return y-x; }); }
+  else if(style==='长线'){ out=out.filter(r=>['明显','强',''].includes(_txt(r.moat)));
+    out.sort((a,b)=>{ let x=a.total_score,y=b.total_score; if(['明显','强'].includes(_txt(a.moat)))x+=5; if(_yn(a.fcf_positive))x+=3; if(_txt(a.main_force_trend)==='流入')x+=2; if(['明显','强'].includes(_txt(b.moat)))y+=5; if(_yn(b.fcf_positive))y+=3; if(_txt(b.main_force_trend)==='流入')y+=2; return y-x; });
+    out.forEach(r=>r.expected_hold='5年以上（长线持有）'); }
+  return out;
+}
+
+/* ============ 筛选引擎（移植自 scripts/screen_engine.py） ============ */
+function evalCondition(row,cond){ const field=cond.field,op=cond.operator,val=row[field],value=cond.value,value2=cond.value2,ftype=cond.ftype||'numeric';
+  if(op==='gt'||op==='lt'||op==='between'){ const v=_num(val); if(v===null)return false; const lo=_num(value); if(lo===null)return false;
+    if(op==='gt')return v>lo; if(op==='lt')return v<lo;
+    if(op==='between'){ const hi=_num(value2); if(hi===null)return false; return lo<=v&&v<=hi; } }
+  if(op==='eq'||op==='in'||op==='neq'){ if(val===null||val===undefined)return false; const sv=String(val);
+    if(op==='eq')return sv===String(value); if(op==='neq')return sv!==String(value);
+    if(op==='in'){ const items=Array.isArray(value)?value:String(value).split(','); return items.map(x=>String(x).trim()).includes(sv); } }
+  if(ftype==='bool'||(op==='eq'&&typeof value==='number')){ if(val===null||val===undefined||value===null||value===undefined)return false;
+    try{ return Math.round(Number(val))===Math.round(Number(value)); }catch(e){return false;} }
+  if(op==='like'){ if(val===null||value===null)return false; return _txt(val).includes(_txt(value)); }
+  return false;
+}
+function applyConditions(rows,conds){ const active=conds.filter(c=>c.enabled!==0&&c.value!==''&&c.value!==null&&c.value!==undefined);
+  if(!active.length)return rows;
+  return rows.filter(r=>active.every(c=>evalCondition(r,c)));
+}
+
+/* ============ 状态与渲染 ============ */
+let SEED = (window.ZOE_SEED||[]).map(r=>Object.assign({},r));
+let CATALOG = window.ZOE_CATALOG||[];
+let userConds = {}; // key -> value  (从抽屉收集)
+let query = '';
+const grpOrder=['财务','估值','资金','技术','题材','风险'];
+
+function buildConds(){ const out=[];
+  for(const e of CATALOG){ const raw=userConds[e.key];
+    if(raw===undefined||raw===''||raw===null)continue;
+    let value=raw; if(e.ftype==='numeric'){ value=Number(raw); if(isNaN(value))continue; }
+    out.push({field:e.field||e.key, operator:e.operator, value, ftype:e.ftype, enabled:1});
+  }
+  return out;
+}
+function currentList(){
+  let rows=rescoreAll(SEED);
+  rows=applyConditions(rows,buildConds());
+  if(query.trim()){ const q=query.trim().toLowerCase();
+    rows=rows.filter(r=>(_txt(r.name)+_txt(r.code)+_txt(r.industry)+_txt(r.ai_category)).toLowerCase().includes(q)); }
+  rows.sort((a,b)=>(b.total_score||0)-(a.total_score||0));
+  return rows;
+}
+function scoreColor(s){ if(s>=80)return'var(--red)'; if(s>=70)return'var(--amber)'; if(s>=60)return'#3b7dd8'; return'var(--green)'; }
+
+function renderList(){ const rows=currentList();
+  document.getElementById('count').textContent='共 '+rows.length+' 只 · 按五维总分排序';
+  const box=document.getElementById('pageScreen'); box.innerHTML='';
+  if(!rows.length){ box.innerHTML='<div class="note">没有符合条件的股票，试试减少筛选条件。</div>'; return; }
+  for(const r of rows){ const div=document.createElement('div'); div.className='stock';
+    const hard=r.rating&&r.rating.includes('排除');
+    div.innerHTML='<div class="main"><div class="nm">'+_txt(r.name)+(hard?'<span class="risk-tag">排除</span>':'')+
+      '</div><div class="meta">'+_txt(r.code)+' · '+_txt(r.industry)+' · '+_txt(r.ai_category)+'</div></div>'+
+      '<div class="score"><div class="n" style="color:'+scoreColor(r.total_score)+'">'+(r.total_score!=null?r.total_score:'-')+
+      '</div><div class="st">'+_txt(r.recommend_index)+'</div></div>';
+    div.onclick=()=>openDetail(r.code); box.appendChild(div);
+  }
+}
+function ringSVG(pct,color){ const R=26,C=2*Math.PI*R,off=C*(1-pct/100);
+  return '<svg class="ring" viewBox="0 0 62 62"><circle cx="31" cy="31" r="'+R+'" fill="none" stroke="#eef0f5" stroke-width="7"/>'+
+    '<circle cx="31" cy="31" r="'+R+'" fill="none" stroke="'+color+'" stroke-width="7" stroke-linecap="round" '+
+    'stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'" transform="rotate(-90 31 31)"/></svg>';
+}
+function openDetail(code){ const r=currentList().find(x=>x.code===code)||rescoreAll(SEED).find(x=>x.code===code);
+  if(!r)return; const dims=[['dim_fundamental','基本面',r.dim_fundamental],['dim_valuation','估值',r.dim_valuation],
+    ['dim_growth','成长',r.dim_growth],['dim_capital','资金',r.dim_capital],['dim_safety','安全',r.dim_safety]];
+  const colors=['#2f6bff','#1aa260','#f59e0b','#e23b3b','#7c5cff'];
+  let rings='<div class="dims">'; dims.forEach((d,i)=>{ rings+='<div class="dim">'+ringSVG(d[2],colors[i])+'<div class="dl">'+d[1]+'<br>'+d[2]+'</div></div>'; });
+  rings+='</div>';
+  let bars='<div class="bars">'; dims.forEach((d,i)=>{ bars+='<div class="bar-row"><div class="bl">'+d[1]+'</div><div class="btrack"><div class="bfill" style="width:'+d[2]+'%;background:'+colors[i]+'"></div></div><div class="bv">'+d[2]+'</div></div>'; });
+  bars+='</div>';
+  const m=document.getElementById('modal');
+  m.innerHTML='<button class="close" onclick="closeModal()">×</button>'+
+    '<h2>'+_txt(r.name)+'</h2><div class="sub">'+_txt(r.code)+' · '+_txt(r.industry)+' · '+_txt(r.ai_category)+
+    ' · 总分 <b style="color:'+scoreColor(r.total_score)+'">'+r.total_score+'</b> '+_txt(r.recommend_index)+'（'+_txt(r.rating)+'）</div>'+
+    '<div class="block"><div class="bt">五维评分</div>'+rings+'</div>'+
+    '<div class="block"><div class="bt">维度明细</div>'+bars+'</div>'+
+    '<div class="block"><div class="bt">核心结论（推断）</div>'+
+      '<div class="note">💡 估值：'+_txt(r.reasonable_valuation)+'</div>'+
+      '<div class="note">🎯 配置：'+_txt(r.suggested_position)+' · 持有：'+_txt(r.expected_hold)+'</div>'+
+      '<div class="note">🛡️ 核心竞争力：'+_txt(r.core_competence)+'</div>'+
+      '<div class="note">📈 长期逻辑：'+_txt(r.long_term_thesis)+'</div></div>'+
+    '<div class="block"><div class="bt">风险</div><div class="note" style="color:'+(r.risk_flags&&r.risk_flags!=='无'?'var(--red)':'var(--ink)')+'">'+_txt(r.risks_text)+'</div></div>'+
+    '<div class="block"><div class="bt">推荐理由</div><ul class="reasons"><li>'+_txt(r.recommend_reasons).split(' | ').join('</li><li>')+'</li></ul></div>';
+  document.getElementById('modalMask').style.display='flex';
+}
+function closeModal(){ document.getElementById('modalMask').style.display='none'; }
+
+/* ============ 筛选抽屉 ============ */
+function renderFilters(){ const body=document.getElementById('filterBody'); body.innerHTML='';
+  const byGrp={}; CATALOG.forEach(e=>{ (byGrp[e.grp]=byGrp[e.grp]||[]).push(e); });
+  for(const g of grpOrder){ if(!byGrp[g])continue;
+    const gd=document.createElement('div'); gd.className='grp'; gd.innerHTML='<div class="gt">'+g+'</div>';
+    for(const e of byGrp[g]){ const row=document.createElement('div'); row.className='cond';
+      let ctrl='';
+      if(e.ftype==='enum'){ ctrl='<select data-key="'+e.key+'">'+(e.enum_values||[]).map(o=>'<option value="'+o+'"'+(userConds[e.key]==o?' selected':'')+'>'+o+'</option>').join('')+'</select>'; }
+      else if(e.ftype==='bool'){ ctrl='<select data-key="'+e.key+'"><option value="">—</option><option value="1"'+(userConds[e.key]=='1'?' selected':'')+'>是</option><option value="0"'+(userConds[e.key]=='0'?' selected':'')+'>否</option></select>'; }
+      else if(e.ftype==='text'){ ctrl='<input data-key="'+e.key+'" placeholder="包含…" value="'+(userConds[e.key]||'')+'">'; }
+      else { const opTxt={gt:'大于',lt:'小于',between:'介于'}[e.operator]||''; ctrl='<span class="op">'+opTxt+'</span><input data-key="'+e.key+'" type="number" placeholder="数值" value="'+(userConds[e.key]||'')+'">'; }
+      row.innerHTML='<div class="cn">'+e.name+'</div>'+ctrl;
+      gd.appendChild(row);
+    }
+    body.appendChild(gd);
+  }
+  body.querySelectorAll('[data-key]').forEach(el=>{ el.onchange=el.oninput=()=>{ userConds[el.dataset.key]=el.value; }; });
+}
+document.getElementById('openFilter').onclick=()=>{ renderFilters(); document.getElementById('drawer').classList.add('open'); document.getElementById('mask').style.display='block'; };
+document.getElementById('closeFilter').onclick=closeDrawer;
+document.getElementById('mask').onclick=closeDrawer;
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('mask').style.display='none'; }
+document.getElementById('applyFilter').onclick=()=>{ closeDrawer(); renderList(); };
+document.getElementById('resetFilter').onclick=()=>{ userConds={}; renderFilters(); renderList(); };
+document.getElementById('q').oninput=e=>{ query=e.target.value; renderList(); };
+document.getElementById('modalMask').onclick=e=>{ if(e.target.id==='modalMask')closeModal(); };
+
+/* ============ 洞察页（本地计算） ============ */
+function renderInsight(){ const rows=rescoreAll(SEED).filter(r=>!(r.rating&&r.rating.includes('排除'))).sort((a,b)=>b.total_score-a.total_score);
+  const box=document.getElementById('pageInsight');
+  const top=rows.slice(0,3);
+  let h='<div class="block"><div class="bt">🌟 高分推荐 Top3</div>';
+  top.forEach(r=>{ h+='<div class="row"><div>'+_txt(r.name)+'<div style="color:var(--sub);font-size:12px">'+_txt(r.industry)+'</div></div><div class="v" style="color:'+scoreColor(r.total_score)+'">'+r.total_score+' · '+_txt(r.recommend_index)+'</div></div>'; });
+  h+='</div>';
+  // 行业分布
+  const ind={}; rows.forEach(r=>{ const k=_txt(r.industry); ind[k]=(ind[k]||0)+1; });
+  h+='<div class="block"><div class="bt">🏭 行业分布</div>';
+  Object.entries(ind).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{ h+='<div class="row"><div>'+k+'</div><div class="v">'+v+' 只</div></div>'; });
+  h+='</div>';
+  // 风险提示
+  const risk=rescoreAll(SEED).filter(r=>(r.risk_flags&&r.risk_flags!=='无'));
+  h+='<div class="block"><div class="bt">⚠️ 风险提醒（'+risk.length+'）</div>';
+  risk.slice(0,8).forEach(r=>{ h+='<div class="row"><div>'+_txt(r.name)+'</div><div class="v" style="color:var(--red);font-size:12px">'+_txt(r.risk_flags)+'</div></div>'; });
+  if(!risk.length)h+='<div class="note">当前股票池暂无显著风险标记。</div>';
+  h+='</div>';
+  box.innerHTML=h;
+}
+
+/* ============ Tab 切换 ============ */
+document.querySelectorAll('.tab').forEach(t=>{ t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  const tab=t.dataset.tab;
+  document.getElementById('pageScreen').style.display=tab==='screen'?'flex':'none';
+  document.getElementById('pageInsight').style.display=tab==='insight'?'block':'none';
+  document.getElementById('pageAbout').style.display=tab==='about'?'block':'none';
+  if(tab==='insight')renderInsight();
+}; });
+
+/* 初始渲染 */
+renderList();
+</script>
+</body>
+</html>
