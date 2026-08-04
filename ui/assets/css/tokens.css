@@ -1,0 +1,267 @@
+/* ============================================================
+   ZOE 股票筛选器 · 设计令牌（Design Tokens）
+   唯一的颜色 / 字体 / 间距 / 圆角 / 阴影 / 层级来源。
+   任何组件样式都不得写死色值，一律引用本文件的变量。
+   ------------------------------------------------------------
+   重要约定：语义色（成功/警告/危险）与行情涨跌色是两套体系，
+   绝不可混用。评级"强烈推荐"的绿 ≠ 股票"下跌"的绿。
+   ============================================================ */
+
+:root {
+  /* ---------- 品牌色阶 ---------- */
+  --brand-50:  #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+  --brand-900: #1e3a8a;
+
+  /* ---------- 中性色阶 ---------- */
+  --n-0:   #ffffff;
+  --n-50:  #f8fafc;
+  --n-100: #f1f5f9;
+  --n-200: #e2e8f0;
+  --n-300: #cbd5e1;
+  --n-400: #94a3b8;
+  --n-500: #64748b;
+  --n-600: #475569;
+  --n-700: #334155;
+  --n-800: #1e293b;
+  --n-900: #0f172a;
+  --n-950: #020617;
+
+  /* ---------- 语义色（状态 / 评级 / 健康度） ----------
+     全部满足 WCAG AA：文本对白底 ≥ 4.5:1，白字对填充底 ≥ 4.5:1 */
+  --sem-success:      #15803d;   /* 5.06:1 on white */
+  --sem-success-soft: #f0fdf4;
+  --sem-success-line: #bbf7d0;
+
+  --sem-info:         #0369a1;   /* 5.74:1 */
+  --sem-info-soft:    #f0f9ff;
+  --sem-info-line:    #bae6fd;
+
+  --sem-warn:         #b45309;   /* 5.13:1 */
+  --sem-warn-soft:    #fffbeb;
+  --sem-warn-line:    #fde68a;
+
+  --sem-danger:       #b91c1c;   /* 6.36:1 */
+  --sem-danger-soft:  #fef2f2;
+  --sem-danger-line:  #fecaca;
+
+  --sem-neutral:      #475569;
+  --sem-neutral-soft: #f1f5f9;
+  --sem-neutral-line: #e2e8f0;
+
+  /* ---------- 行情涨跌体系 ----------
+     基准色（A股/港股：红涨绿跌） */
+  --mkt-red:    #d92b2b;   /* 4.91:1 on white */
+  --mkt-green:  #0f8a5f;   /* 4.52:1 on white */
+  --mkt-flat:   #64748b;
+  --mkt-red-soft:   #fef2f2;
+  --mkt-green-soft: #f0fdf9;
+
+  /* 语义映射：默认 A 股惯例 —— 涨=红，跌=绿 */
+  --mkt-up:        var(--mkt-red);
+  --mkt-down:      var(--mkt-green);
+  --mkt-up-soft:   var(--mkt-red-soft);
+  --mkt-down-soft: var(--mkt-green-soft);
+
+  /* ---------- 表面 / 文本 / 描边（主题化入口） ---------- */
+  --bg-body:      #f5f7fa;
+  --bg-surface:   #ffffff;
+  --bg-raised:    #ffffff;
+  --bg-sunken:    #f8fafc;
+  --bg-overlay:   rgba(15, 23, 42, .55);
+  --bg-hover:     #f8fafc;
+  --bg-active:    var(--brand-50);
+
+  --text-primary:   #0f172a;
+  --text-secondary: #475569;
+  --text-muted:     #64748b;
+  --text-inverse:   #ffffff;
+  --text-link:      var(--brand-700);
+
+  --line:        #e2e8f0;
+  --line-strong: #cbd5e1;
+  --line-focus:  var(--brand-600);
+
+  --header-from: #1e40af;
+  --header-to:   #2563eb;
+  --header-text: #ffffff;
+
+  /* ---------- 字体 ---------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, "Courier New", monospace;
+  /* 数字专用：等宽数字，避免行情跳动时列宽抖动 */
+  --font-num: var(--font-mono);
+
+  --fs-2xs: 0.6875rem;  /* 11px */
+  --fs-xs:  0.75rem;    /* 12px */
+  --fs-sm:  0.8125rem;  /* 13px */
+  --fs-md:  0.875rem;   /* 14px 正文基准 */
+  --fs-lg:  1rem;       /* 16px */
+  --fs-xl:  1.125rem;   /* 18px */
+  --fs-2xl: 1.375rem;   /* 22px */
+  --fs-3xl: 1.75rem;    /* 28px */
+
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semi:   600;
+  --fw-bold:   700;
+  --fw-black:  800;
+
+  --lh-tight: 1.25;
+  --lh-snug:  1.45;
+  --lh-base:  1.6;
+
+  /* ---------- 间距（4px 基准） ---------- */
+  --sp-0:  0;
+  --sp-1:  0.25rem;   /* 4  */
+  --sp-2:  0.5rem;    /* 8  */
+  --sp-3:  0.75rem;   /* 12 */
+  --sp-4:  1rem;      /* 16 */
+  --sp-5:  1.25rem;   /* 20 */
+  --sp-6:  1.5rem;    /* 24 */
+  --sp-8:  2rem;      /* 32 */
+  --sp-10: 2.5rem;    /* 40 */
+  --sp-12: 3rem;      /* 48 */
+  --sp-16: 4rem;      /* 64 */
+
+  /* 页面左右安全边距：随断点变化，组件统一引用 */
+  --gutter: var(--sp-4);
+
+  /* ---------- 圆角 ---------- */
+  --r-xs:   4px;
+  --r-sm:   6px;
+  --r-md:   8px;
+  --r-lg:   12px;
+  --r-xl:   16px;
+  --r-2xl:  20px;
+  --r-full: 999px;
+
+  /* ---------- 阴影 ---------- */
+  --sh-xs: 0 1px 2px rgba(15, 23, 42, .05);
+  --sh-sm: 0 1px 3px rgba(15, 23, 42, .08), 0 1px 2px rgba(15, 23, 42, .04);
+  --sh-md: 0 4px 12px rgba(15, 23, 42, .08), 0 2px 4px rgba(15, 23, 42, .04);
+  --sh-lg: 0 12px 28px rgba(15, 23, 42, .12), 0 4px 8px rgba(15, 23, 42, .06);
+  --sh-xl: 0 24px 56px rgba(15, 23, 42, .18);
+  --sh-focus: 0 0 0 3px rgba(37, 99, 235, .28);
+
+  /* ---------- 层级 ---------- */
+  --z-base:       0;
+  --z-sticky:     20;
+  --z-header:     30;
+  --z-bottomnav:  35;
+  --z-drawer:     40;
+  --z-scrim:      39;
+  --z-modal:      50;
+  --z-toast:      70;
+
+  /* ---------- 动效 ---------- */
+  --t-fast:   140ms cubic-bezier(.4, 0, .2, 1);
+  --t-base:   220ms cubic-bezier(.4, 0, .2, 1);
+  --t-slow:   360ms cubic-bezier(.4, 0, .2, 1);
+  --t-spring: 420ms cubic-bezier(.22, 1, .36, 1);
+
+  /* ---------- 触控与尺寸 ---------- */
+  --tap-min:      44px;  /* 移动端最小可点区域（WCAG 2.5.5） */
+  --header-h:     56px;
+  --bottomnav-h:  56px;
+  --content-max:  1320px;
+
+  /* iOS 刘海 / 底部手势条安全区 */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+
+  /* ---------- 断点（供 JS 通过 getComputedStyle 读取，保持单一真相） ---------- */
+  --bp-xs: 480px;
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+}
+
+/* ============================================================
+   涨跌配色偏好：美股 / 全球惯例（绿涨红跌）
+   在 <html data-market-color="global"> 时反转
+   ============================================================ */
+[data-market-color="global"] {
+  --mkt-up:        var(--mkt-green);
+  --mkt-down:      var(--mkt-red);
+  --mkt-up-soft:   var(--mkt-green-soft);
+  --mkt-down-soft: var(--mkt-red-soft);
+}
+
+/* ============================================================
+   暗色主题
+   仅覆盖"表面 / 文本 / 描边 / 语义软色"，色阶本身不动。
+   涨跌色提亮以保证暗底可读（AA on #0f172a）。
+   ============================================================ */
+[data-theme="dark"] {
+  --bg-body:    #0b1220;
+  --bg-surface: #131c2e;
+  --bg-raised:  #1a2438;
+  --bg-sunken:  #0e1626;
+  --bg-overlay: rgba(2, 6, 23, .72);
+  --bg-hover:   #1c2740;
+  --bg-active:  #1e3a5f;
+
+  --text-primary:   #e8edf6;
+  --text-secondary: #a9b6cc;
+  --text-muted:     #8695ae;
+  --text-inverse:   #0b1220;
+  --text-link:      #7cb0ff;
+
+  --line:        #26324a;
+  --line-strong: #35435f;
+
+  --header-from: #14284d;
+  --header-to:   #1c3a6e;
+
+  /* 语义色：暗底需要更亮的前景 */
+  --sem-success:      #4ade80;
+  --sem-success-soft: #0d2a1c;
+  --sem-success-line: #1c5138;
+
+  --sem-info:         #60c5fa;
+  --sem-info-soft:    #0a2436;
+  --sem-info-line:    #164a68;
+
+  --sem-warn:         #fbbf24;
+  --sem-warn-soft:    #2c2008;
+  --sem-warn-line:    #5c4310;
+
+  --sem-danger:       #f87171;
+  --sem-danger-soft:  #2d1215;
+  --sem-danger-line:  #5e2226;
+
+  --sem-neutral:      #a9b6cc;
+  --sem-neutral-soft: #1a2438;
+  --sem-neutral-line: #26324a;
+
+  /* 行情色：暗底提亮版 */
+  --mkt-red:        #ff6b6b;
+  --mkt-green:      #34d399;
+  --mkt-flat:       #8695ae;
+  --mkt-red-soft:   #2d1215;
+  --mkt-green-soft: #0d2a20;
+
+  --sh-xs: 0 1px 2px rgba(0, 0, 0, .4);
+  --sh-sm: 0 1px 3px rgba(0, 0, 0, .5);
+  --sh-md: 0 4px 12px rgba(0, 0, 0, .5);
+  --sh-lg: 0 12px 28px rgba(0, 0, 0, .55);
+  --sh-xl: 0 24px 56px rgba(0, 0, 0, .65);
+  --sh-focus: 0 0 0 3px rgba(96, 165, 250, .35);
+}
+
+/* 断点内的 gutter 递增 —— 所有容器共用，保证节奏统一 */
+@media (min-width: 768px)  { :root { --gutter: var(--sp-6); --header-h: 60px; } }
+@media (min-width: 1024px) { :root { --gutter: var(--sp-6); --header-h: 64px; } }
+@media (min-width: 1280px) { :root { --gutter: var(--sp-8); } }

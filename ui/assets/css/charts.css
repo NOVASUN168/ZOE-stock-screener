@@ -1,0 +1,201 @@
+/* ============================================================
+   charts.css · 五维雪花图与图表容器
+   核心目标：小屏可读、可缩放、可触控。
+   SVG 一律用 viewBox + width:100% 自适应，不写死像素宽度。
+   ============================================================ */
+
+/* ---------- 图表通用容器 ---------- */
+.chart-box {
+  width: 100%;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--sp-3);
+}
+.chart-box svg { width: 100%; height: auto; display: block; }
+
+/* ---------- 详情页雪花区：手机纵向 / 桌面横向 ---------- */
+.snow-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  align-items: stretch;
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+@media (min-width: 768px) {
+  .snow-wrap { flex-direction: row; align-items: center; gap: var(--sp-6); }
+}
+
+.snow-figure {
+  position: relative;
+  flex: none;
+  width: min(260px, 72vw);
+  margin: 0 auto;
+  touch-action: none;          /* 交给手势逻辑处理，避免页面跟着缩放 */
+  overflow: hidden;
+  border-radius: var(--r-md);
+}
+@media (min-width: 768px) { .snow-figure { margin: 0; width: 240px; } }
+
+.snow-figure svg {
+  width: 100%;
+  height: auto;
+  transform-origin: center center;
+  transition: transform var(--t-base);
+  will-change: transform;
+}
+.snow-figure.is-zoomed svg { transition: none; cursor: grab; }
+
+/* 缩放控制按钮组 */
+.snow-zoom {
+  position: absolute;
+  right: var(--sp-1);
+  bottom: var(--sp-1);
+  display: flex;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-full);
+  padding: 3px;
+  box-shadow: var(--sh-sm);
+}
+.snow-zoom button {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+.snow-zoom button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.snow-hint {
+  text-align: center;
+  font-size: var(--fs-2xs);
+  color: var(--text-muted);
+  margin-top: var(--sp-1);
+}
+
+/* ---------- 维度条 ---------- */
+.dim-bars {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.dim-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+}
+@media (min-width: 480px) { .dim-row { grid-template-columns: 44px minmax(0, 1fr) 82px; } }
+
+.dim-row .dim-label { color: var(--text-muted); text-align: right; white-space: nowrap; }
+.dim-row .dim-track {
+  height: 10px;
+  background: var(--line);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+.dim-row .dim-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-full);
+  transition: width var(--t-slow);
+}
+.dim-row .dim-value {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--fw-semi);
+  white-space: nowrap;
+  text-align: right;
+  font-size: var(--fs-2xs);
+}
+@media (min-width: 480px) { .dim-row .dim-value { font-size: var(--fs-xs); } }
+
+/* ---------- 一句话解读 ---------- */
+.snow-summary {
+  background: var(--sem-info-soft);
+  border: 1px solid var(--sem-info-line);
+  color: var(--sem-info);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  margin-bottom: var(--sp-4);
+}
+
+/* ---------- 列表内迷你雪花 ---------- */
+.minisnow {
+  display: block;
+  cursor: pointer;
+  transition: transform var(--t-fast);
+}
+.minisnow:hover { transform: scale(1.12); }
+/* 表格单元格内保证 44px 可点区 */
+.snow-cell {
+  display: grid;
+  place-items: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  border-radius: var(--r-md);
+}
+.snow-cell:hover { background: var(--bg-hover); }
+
+/* ---------- 对比视图 ---------- */
+.cmp-figure {
+  width: min(340px, 86vw);
+  margin: 0 auto var(--sp-3);
+}
+.cmp-legend {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: var(--sp-3) 0;
+  font-size: var(--fs-sm);
+}
+.cmp-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.cmp-dot {
+  width: 12px; height: 12px;
+  border-radius: var(--r-xs);
+  flex: none;
+}
+
+/* 对比表格：小屏横向滚动，首列粘住 */
+.cmp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.cmp-table-wrap .table th:first-child,
+.cmp-table-wrap .table td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--bg-surface);
+  z-index: 2;
+}
+.cmp-table-wrap .table th:first-child { background: var(--bg-sunken); z-index: 3; }
+.cmp-best { color: var(--sem-success); font-weight: var(--fw-bold); }
+
+/* ---------- 行业轮动等横向条形 ---------- */
+.bar-list { display: flex; flex-direction: column; gap: var(--sp-2); }
+.bar-item {
+  display: grid;
+  grid-template-columns: minmax(72px, 26%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+}
+.bar-item .bi-label { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-item .bi-track { height: 8px; background: var(--line); border-radius: var(--r-full); overflow: hidden; }
+.bar-item .bi-fill { display: block; height: 100%; background: var(--brand-500); border-radius: var(--r-full); }
+.bar-item .bi-val { font-family: var(--font-num); font-weight: var(--fw-semi); color: var(--text-secondary); }
