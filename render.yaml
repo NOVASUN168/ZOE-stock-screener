@@ -6,6 +6,6 @@ services:
     region: oregon
     branch: main
     buildCommand: "echo 'ZOE 后端纯标准库，无需构建'"
-    startCommand: "python scripts/server.py --host 0.0.0.0 --port $PORT"
+    startCommand: "rm -f data/screener.db && python scripts/server.py --host 0.0.0.0 --port $PORT"
     healthCheckPath: /
     envVars: []

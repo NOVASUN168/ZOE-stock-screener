@@ -71,11 +71,11 @@ def init_config(conn):
 
 # ---------- V2.1：条件目录 / 默认用户 / 示例方案 播种 ----------
 # ⚠️ 开发默认密码（仅本地/演示用，生产请改）：
-#   nova  / owner   -> zoe2026
+#   nova  / owner   -> NovaLocal#2026
 #   robin / editor  -> robin2026
 #   sean  / editor  -> sean2026
 DEV_USERS = [
-    ("nova", "zoe2026", "Nova", "owner"),
+    ("nova", "NovaLocal#2026", "Nova", "owner"),
     ("robin", "robin2026", "Robin", "editor"),
     ("sean", "sean2026", "Sean", "editor"),
 ]
